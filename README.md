@@ -10,12 +10,6 @@ A terminal-first webhook relay for local development. Give webhook providers one
 curl -fsSL https://trytofu.dev/install | sh
 ```
 
-Or build from source:
-
-```bash
-cargo install --path .
-```
-
 ## Quick start
 
 ```bash
