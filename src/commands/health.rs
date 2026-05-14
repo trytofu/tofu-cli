@@ -1,0 +1,21 @@
+use crate::{api::api_client::ApiClient, models::health_status::HealthStatus, utils::output};
+
+pub async fn health(api: &ApiClient, json: bool) {
+    match api.health().await {
+        Ok(HealthStatus::Ok) => {
+            if json {
+                println!("{{\"status\":\"ok\"}}");
+            } else {
+                output::success("Api is health");
+            }
+        }
+        Ok(HealthStatus::NotOk(status)) => {
+            output::error(format!("API returned status: {status}"));
+            std::process::exit(1);
+        }
+        Err(e) => {
+            output::error(format!("Failed to connect to API: {e}"));
+            std::process::exit(1);
+        }
+    }
+}
