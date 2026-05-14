@@ -1,2 +1,4 @@
-pub mod commands;
+mod cli;
 pub mod health;
+
+pub use cli::{Cli, Commands};

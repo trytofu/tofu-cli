@@ -1,9 +1,9 @@
 use clap::Parser;
 
 use crate::{
-    api::api_client::ApiClient,
-    commands::commands::{Cli, Commands},
-    config::config::Config,
+    api::ApiClient,
+    commands::{Cli, Commands, health},
+    config::Config,
 };
 
 mod api;
@@ -20,6 +20,6 @@ async fn main() {
     let api = ApiClient::new(api_base_url, config.resolve_token());
 
     match cli.command {
-        Commands::Health => commands::health::health(&api, cli.json).await,
+        Commands::Health => health::run(&api, cli.json).await,
     }
 }

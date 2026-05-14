@@ -1,6 +1,6 @@
-use crate::{api::api_client::ApiClient, models::health_status::HealthStatus, utils::output};
+use crate::{api::ApiClient, models::health_status::HealthStatus, utils::output};
 
-pub async fn health(api: &ApiClient, json: bool) {
+pub async fn run(api: &ApiClient, json: bool) {
     match api.health().await {
         Ok(HealthStatus::Ok) => {
             if json {
