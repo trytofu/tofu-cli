@@ -30,4 +30,6 @@ pub enum Commands {
         #[arg(long, help = "Print the device login URL without opening a browser")]
         no_browser: bool,
     },
+    // Log out and clear token
+    Logout,
 }

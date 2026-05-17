@@ -34,6 +34,7 @@ async fn main() {
                 cli.json,
             )
             .await
-        }
+        },
+        Commands::Logout => auth::logout(&mut config, cli.json),
     }
 }

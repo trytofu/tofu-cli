@@ -23,6 +23,26 @@ pub async fn login(
     }
 }
 
+pub fn logout(config: &mut Config, json: bool) {
+    config.token = None;
+
+    if let Err(e) = config.save() {
+        output::error(format!("Failed to save config: {e}"));
+        std::process::exit(1);
+    }
+
+    if json {
+        println!(
+            "{}",
+            serde_json::json!({
+                "status": "ok"
+            })
+        )
+    } else {
+        output::success("Logged out.");
+    }
+}
+
 async fn login_with_token(
     config: &mut Config,
     token: String,
