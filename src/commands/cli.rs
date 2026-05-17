@@ -21,4 +21,13 @@ pub struct Cli {
 pub enum Commands {
     /// Checks API health
     Health,
+    /// Log in with your browser approval or an API token
+    Login {
+        #[arg(long, help = "Personal API token")]
+        token: Option<String>,
+        #[arg(long, help = "API base URL to save")]
+        api_base_url: Option<String>,
+        #[arg(long, help = "Print the device login URL without opening a browser")]
+        no_browser: bool,
+    },
 }

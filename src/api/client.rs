@@ -1,6 +1,13 @@
-use reqwest::Client;
+use reqwest::{Client, StatusCode};
 
-use crate::models::{api_error::ApiError, health_status::HealthStatus};
+use crate::{
+    api::utils::api_error_from_response,
+    models::{
+        api_error::ApiError,
+        health_status::HealthStatus,
+        user_me::{DeviceLoginPoll, DeviceLoginStart, UserMe},
+    },
+};
 
 pub struct ApiClient {
     client: Client,
@@ -31,5 +38,76 @@ impl ApiClient {
         } else {
             Ok(HealthStatus::NotOk(response.status()))
         }
+    }
+
+    pub async fn me(&self) -> Result<UserMe, ApiError> {
+        let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
+        let url = format!("{}/api/me", self.base_url);
+
+        let response = self
+            .client
+            .get(&url)
+            .header("Authorization", format!("Bearer {token}"))
+            .send()
+            .await
+            .map_err(ApiError::Request)?;
+
+        let status = response.status();
+
+        if status == StatusCode::UNAUTHORIZED {
+            return Err(ApiError::UnexpectedStatus { status });
+        }
+
+        if !status.is_success() {
+            return Err(api_error_from_response(response).await);
+        }
+
+        response.json::<UserMe>().await.map_err(ApiError::Request)
+    }
+
+    pub async fn start_device_login(&self) -> Result<DeviceLoginStart, ApiError> {
+        let url = format!("{}/api/device-login/start", self.base_url);
+        let body = serde_json::json!({"client_name": "Tofu CLI"});
+
+        let response = self
+            .client
+            .post(&url)
+            .json(&body)
+            .send()
+            .await
+            .map_err(ApiError::Request)?;
+
+        let status = response.status();
+        if !status.is_success() {
+            return Err(ApiError::UnexpectedStatus { status });
+        }
+
+        response
+            .json::<DeviceLoginStart>()
+            .await
+            .map_err(ApiError::Request)
+    }
+
+    pub async fn poll_device_login(&self, device_code: &str) -> Result<DeviceLoginPoll, ApiError> {
+        let url = format!("{}/api/device-login/poll", self.base_url);
+        let body = serde_json::json!({ "device_code": device_code });
+
+        let response = self
+            .client
+            .post(&url)
+            .json(&body)
+            .send()
+            .await
+            .map_err(ApiError::Request)?;
+
+        let status = response.status();
+        if !status.is_success() {
+            return Err(ApiError::UnexpectedStatus { status });
+        }
+
+        response
+            .json::<DeviceLoginPoll>()
+            .await
+            .map_err(ApiError::Request)
     }
 }

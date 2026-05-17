@@ -2,7 +2,7 @@ use clap::Parser;
 
 use crate::{
     api::ApiClient,
-    commands::{Cli, Commands, health},
+    commands::{Cli, Commands, auth, health},
     config::Config,
 };
 
@@ -15,11 +15,25 @@ mod utils;
 #[tokio::main]
 async fn main() {
     let cli = Cli::parse();
-    let config = Config::load();
+    let mut config = Config::load();
     let api_base_url = config.resolve_api_base_url(cli.api_base_url.clone());
     let api = ApiClient::new(api_base_url, config.resolve_token());
 
     match cli.command {
         Commands::Health => health::run(&api, cli.json).await,
+        Commands::Login {
+            token,
+            api_base_url: login_base_url,
+            no_browser,
+        } => {
+            auth::login(
+                &mut config,
+                token,
+                login_base_url.or(cli.api_base_url),
+                no_browser,
+                cli.json,
+            )
+            .await
+        }
     }
 }

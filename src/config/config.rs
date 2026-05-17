@@ -29,6 +29,24 @@ impl Config {
         dirs::home_dir().map(|p| p.join(".config").join("tofu").join("config.toml"))
     }
 
+    pub fn save(&self) -> Result<(), std::io::Error> {
+        let path = Self::path().ok_or_else(|| {
+            std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "could not determine config directory",
+            )
+        })?;
+
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+
+        let contents = toml::to_string_pretty(self)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+
+        std::fs::write(&path, contents)
+    }
+
     pub fn resolve_api_base_url(&self, cli_override: Option<String>) -> String {
         cli_override
             .or_else(|| self.api_base_url.clone())
