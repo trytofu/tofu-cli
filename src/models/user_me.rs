@@ -5,7 +5,8 @@ pub struct UserMe {
     pub id: String,
     pub email: String,
     pub created_at: String,
-    #[serde(default)] #[allow(dead_code)]
+    #[serde(default)]
+    #[allow(dead_code)]
     pub active_workspace_id: Option<String>,
 }
 
