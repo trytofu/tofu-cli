@@ -7,7 +7,7 @@ use crate::{
         api_error::ApiError,
         user_me::{DeviceLoginStart, UserMe},
     },
-    utils::{os, output},
+    utils::{os, output, time},
 };
 
 pub async fn login(
@@ -40,6 +40,48 @@ pub fn logout(config: &mut Config, json: bool) {
         )
     } else {
         output::success("Logged out.");
+    }
+}
+
+pub async fn whoami(client: &ApiClient, json: bool) {
+    match fetch_current_user(client).await {
+        Ok(user) => {
+            if json {
+                println!(
+                    "{}",
+                    serde_json::json!({
+                        "id": user.id,
+                        "email": user.email,
+                        "created_at": user.created_at,
+                    })
+                );
+            } else {
+                println!(
+                    "{}",
+                    output::kv_table(vec![
+                        ("Email", user.email),
+                        ("User ID", user.id),
+                        ("Created", time::fmt_time(&user.created_at)),
+                    ])
+                );
+            }
+        }
+        Err(ApiError::NotAuthenticated) => {
+            output::error("Not authenticated.");
+            output::command("Try running `tofu login`");
+            std::process::exit(1);
+        }
+        Err(ApiError::UnexpectedStatus { status })
+            if status == reqwest::StatusCode::UNAUTHORIZED =>
+        {
+            output::error("Invalid token.");
+            output::warning("Run `tofu login` to re-authenticate.");
+            std::process::exit(1);
+        }
+        Err(e) => {
+            output::error(format!("Failed to fetch user: {e}"));
+            std::process::exit(1);
+        }
     }
 }
 
@@ -151,7 +193,26 @@ async fn complete_login(
     json: bool,
 ) {
     let base_url = config.resolve_api_base_url(api_base_url.clone());
-    let user = verify_login(&token, base_url).await;
+    let client = ApiClient::new(base_url, Some(token.clone()));
+    let user = match fetch_current_user(&client).await {
+        Ok(user) => user,
+        Err(ApiError::NotAuthenticated) => {
+            output::error("Not authenticated.");
+            output::command("Try running `tofu login`");
+            std::process::exit(1);
+        }
+        Err(ApiError::UnexpectedStatus { status })
+            if status == reqwest::StatusCode::UNAUTHORIZED =>
+        {
+            output::error("Invalid token.");
+            output::warning("Check your token and try again.");
+            std::process::exit(1);
+        }
+        Err(e) => {
+            output::error(format!("Login failed: {e}"));
+            std::process::exit(1);
+        }
+    };
 
     config.token = Some(token);
     if let Some(url) = api_base_url {
@@ -176,26 +237,6 @@ async fn complete_login(
     }
 }
 
-async fn verify_login(token: &str, base_url: String) -> UserMe {
-    let authed_client = ApiClient::new(base_url, Some(token.to_string()));
-
-    match authed_client.me().await {
-        Ok(user) => user,
-        Err(ApiError::NotAuthenticated) => {
-            output::error("Not authenticated.");
-            output::command("Try running `tofu login`");
-            std::process::exit(1);
-        }
-        Err(ApiError::UnexpectedStatus { status })
-            if status == reqwest::StatusCode::UNAUTHORIZED =>
-        {
-            output::error("Invalid token.");
-            output::warning("Check your token and try again.");
-            std::process::exit(1);
-        }
-        Err(e) => {
-            output::error(format!("Login failed: {e}"));
-            std::process::exit(1);
-        }
-    }
+async fn fetch_current_user(client: &ApiClient) -> Result<UserMe, ApiError> {
+    client.me().await
 }

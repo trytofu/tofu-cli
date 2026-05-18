@@ -158,6 +158,12 @@ fn config_contents(home: &PathBuf) -> String {
     fs::read_to_string(home.join(".config/tofu/config.toml")).expect("read config")
 }
 
+fn write_config(home: &PathBuf, contents: &str) {
+    let config_path = home.join(".config/tofu/config.toml");
+    fs::create_dir_all(config_path.parent().expect("config parent")).expect("create config parent");
+    fs::write(config_path, contents).expect("write config");
+}
+
 #[test]
 fn token_login_verifies_then_saves_config() {
     let user = r#"{"id":"user_1","email":"dev@example.com","created_at":"2026-01-01T00:00:00Z"}"#;
@@ -284,6 +290,110 @@ fn device_login_polls_for_token_then_verifies_and_saves_config() {
     let config = config_contents(&home);
     assert!(config.contains(&base_url));
     assert!(config.contains(r#"token = "tofu_pat_device""#));
+
+    fs::remove_dir_all(home).expect("remove temp home");
+}
+
+#[test]
+fn whoami_uses_saved_token_and_prints_json_user() {
+    let user =
+        r#"{"id":"user_3","email":"whoami@example.com","created_at":"2026-01-01T00:00:00Z"}"#;
+    let server = MockServer::start(vec![ok_json(user)]);
+    let base_url = server.base_url.clone();
+    let home = temp_home("whoami");
+    write_config(
+        &home,
+        &format!("api_base_url = \"{base_url}\"\ntoken = \"tofu_pat_saved\"\n"),
+    );
+
+    let output = Command::new(env!("CARGO_BIN_EXE_tofu-cli"))
+        .env("HOME", &home)
+        .args(["--json", "whoami"])
+        .output()
+        .expect("run tofu-cli whoami");
+
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains(r#""id":"user_3""#));
+    assert!(stdout.contains(r#""email":"whoami@example.com""#));
+
+    let requests = server.finish();
+    assert_eq!(requests.len(), 1);
+    assert_eq!(requests[0].method, "GET");
+    assert_eq!(requests[0].path, "/api/me");
+    assert_eq!(
+        requests[0].header("authorization"),
+        Some("Bearer tofu_pat_saved")
+    );
+
+    fs::remove_dir_all(home).expect("remove temp home");
+}
+
+#[test]
+fn whoami_reports_fetch_failure_without_login_wording() {
+    let response =
+        "HTTP/1.1 500 Internal Server Error\r\ncontent-length: 0\r\nconnection: close\r\n\r\n"
+            .to_string();
+    let server = MockServer::start(vec![response]);
+    let base_url = server.base_url.clone();
+    let home = temp_home("whoami-failure");
+    write_config(
+        &home,
+        &format!("api_base_url = \"{base_url}\"\ntoken = \"tofu_pat_saved\"\n"),
+    );
+
+    let output = Command::new(env!("CARGO_BIN_EXE_tofu-cli"))
+        .env("HOME", &home)
+        .args(["whoami"])
+        .output()
+        .expect("run tofu-cli whoami");
+
+    assert!(
+        !output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("Failed to fetch user"));
+    assert!(!stderr.contains("Login failed"));
+
+    let requests = server.finish();
+    assert_eq!(requests.len(), 1);
+
+    fs::remove_dir_all(home).expect("remove temp home");
+}
+
+#[test]
+fn logout_clears_token_but_preserves_api_base_url() {
+    let home = temp_home("logout");
+    write_config(
+        &home,
+        "api_base_url = \"http://127.0.0.1:1234\"\ntoken = \"tofu_pat_saved\"\n",
+    );
+
+    let output = Command::new(env!("CARGO_BIN_EXE_tofu-cli"))
+        .env("HOME", &home)
+        .args(["--json", "logout"])
+        .output()
+        .expect("run tofu-cli logout");
+
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(String::from_utf8_lossy(&output.stdout).contains(r#""status":"ok""#));
+
+    let config = config_contents(&home);
+    assert!(config.contains(r#"api_base_url = "http://127.0.0.1:1234""#));
+    assert!(!config.contains("token"));
 
     fs::remove_dir_all(home).expect("remove temp home");
 }

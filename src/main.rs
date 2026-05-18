@@ -34,7 +34,8 @@ async fn main() {
                 cli.json,
             )
             .await
-        },
+        }
         Commands::Logout => auth::logout(&mut config, cli.json),
+        Commands::Whoami => auth::whoami(&api, cli.json).await,
     }
 }
