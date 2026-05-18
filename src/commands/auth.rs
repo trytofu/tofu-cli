@@ -68,7 +68,7 @@ pub async fn whoami(client: &ApiClient, json: bool) {
         }
         Err(ApiError::NotAuthenticated) => {
             output::error("Not authenticated.");
-            output::command("Try running `tofu login`");
+            output::warning(format!("Run {}.", output::command("tofu login")));
             std::process::exit(1);
         }
         Err(ApiError::UnexpectedStatus { status })
@@ -107,7 +107,10 @@ async fn device_login(
         Ok(s) => s,
         Err(ApiError::UnexpectedStatus { status }) if status == reqwest::StatusCode::NOT_FOUND => {
             output::error("This Tofu API does not support device login yet.");
-            output::command("Try using `tofu login --token <token>`");
+            output::warning(format!(
+                "Try using {}.",
+                output::command("tofu login --token <token>")
+            ));
             std::process::exit(1);
         }
         Err(e) => {
@@ -128,8 +131,8 @@ async fn device_login(
             })
         );
     } else {
-        output::info("Open this URL to approve Tofu CLI login:");
-        output::info(&started.verification_uri_complete);
+        output::next_step("Open this URL to approve Tofu CLI login:");
+        println!("{}", output::url(&started.verification_uri_complete));
         println!();
         println!("Code: {}", started.user_code);
     }
@@ -164,7 +167,7 @@ async fn poll_until_approved(client: &ApiClient, started: &DeviceLoginStart) -> 
             }
             Ok(poll) if poll.status == "expired" => {
                 output::error("Device login expired.");
-                output::command("Try running `tofu login` again.");
+                output::warning(format!("Run {} again.", output::command("tofu login")));
                 std::process::exit(1);
             }
             Ok(poll) => {
@@ -182,7 +185,7 @@ async fn poll_until_approved(client: &ApiClient, started: &DeviceLoginStart) -> 
     }
 
     output::error("Device login timed out.");
-    output::command("Try running `tofu login` again.");
+    output::warning(format!("Run {} again.", output::command("tofu login")));
     std::process::exit(1);
 }
 
@@ -198,7 +201,7 @@ async fn complete_login(
         Ok(user) => user,
         Err(ApiError::NotAuthenticated) => {
             output::error("Not authenticated.");
-            output::command("Try running `tofu login`");
+            output::warning(format!("Run {}.", output::command("tofu login")));
             std::process::exit(1);
         }
         Err(ApiError::UnexpectedStatus { status })
