@@ -34,4 +34,6 @@ pub enum Commands {
     Logout,
     /// Show the current authenticated user
     Whoami,
+    /// Show the usage for the current user
+    Usage,
 }

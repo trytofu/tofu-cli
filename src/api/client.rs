@@ -1,7 +1,7 @@
 use reqwest::{Client, StatusCode};
 
 use crate::{
-    api::utils::api_error_from_response,
+    api::{models::billing_status::BillingStatus, utils::api_error_from_response},
     models::{
         api_error::ApiError,
         health_status::HealthStatus,
@@ -109,5 +109,29 @@ impl ApiClient {
             .json::<DeviceLoginPoll>()
             .await
             .map_err(ApiError::Request)
+    }
+}
+
+/// Billing status
+impl ApiClient {
+    pub async fn billing_status(&self) -> Result<BillingStatus, ApiError> {
+        let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
+        let url = format!("{}/api/billing/status", self.base_url);
+
+        let r = self
+            .client
+            .get(&url)
+            .header("Authorization", format!("Bearer {token}"))
+            .send()
+            .await
+            .map_err(ApiError::Request)?;
+
+        let status = r.status();
+
+        if !status.is_success() {
+            return Err(api_error_from_response(r).await);
+        }
+
+        r.json::<BillingStatus>().await.map_err(ApiError::Request)
     }
 }
