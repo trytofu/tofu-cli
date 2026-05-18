@@ -6,7 +6,7 @@ use comfy_table::{
 };
 
 use crate::{
-    api::models::billing_status::{BillingLimits, BillingStatus, BillingUsage},
+    models::billing_status::{BillingLimits, BillingStatus, BillingUsage},
     utils::time::fmt_time,
 };
 

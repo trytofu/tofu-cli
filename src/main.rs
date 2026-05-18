@@ -2,7 +2,7 @@ use clap::Parser;
 
 use crate::{
     api::ApiClient,
-    commands::{Cli, Commands, auth, health, usage},
+    commands::{Cli, Commands, ConfigCommands, auth, cli_config, health, usage},
     config::Config,
 };
 
@@ -38,5 +38,8 @@ async fn main() {
         Commands::Logout => auth::logout(&mut config, cli.json),
         Commands::Whoami => auth::whoami(&api, cli.json).await,
         Commands::Usage => usage::run(&api, cli.json).await,
+        Commands::Config { command } => match command {
+            ConfigCommands::Show => cli_config::show(&config, cli.json),
+        }
     }
 }

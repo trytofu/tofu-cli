@@ -36,4 +36,15 @@ pub enum Commands {
     Whoami,
     /// Show the usage for the current user
     Usage,
+    /// Manage config
+    Config {
+        #[command(subcommand)]
+        command: ConfigCommands,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum ConfigCommands {
+    /// Show current config
+    Show,
 }

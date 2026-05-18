@@ -1,9 +1,10 @@
-use reqwest::{Client, StatusCode};
+use reqwest::{Client, Response, StatusCode};
 
 use crate::{
-    api::{models::billing_status::BillingStatus, utils::api_error_from_response},
+    api::utils::api_error_from_response,
     models::{
         api_error::ApiError,
+        billing_status::BillingStatus,
         health_status::HealthStatus,
         user_me::{DeviceLoginPoll, DeviceLoginStart, UserMe},
     },
@@ -44,25 +45,18 @@ impl ApiClient {
         let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
         let url = format!("{}/api/me", self.base_url);
 
-        let response = self
-            .client
-            .get(&url)
-            .header("Authorization", format!("Bearer {token}"))
-            .send()
-            .await
-            .map_err(ApiError::Request)?;
-
-        let status = response.status();
+        let r = self.get_auth(&url, token).await?;
+        let status = r.status();
 
         if status == StatusCode::UNAUTHORIZED {
             return Err(ApiError::UnexpectedStatus { status });
         }
 
         if !status.is_success() {
-            return Err(api_error_from_response(response).await);
+            return Err(api_error_from_response(r).await);
         }
 
-        response.json::<UserMe>().await.map_err(ApiError::Request)
+        r.json::<UserMe>().await.map_err(ApiError::Request)
     }
 
     pub async fn start_device_login(&self) -> Result<DeviceLoginStart, ApiError> {
@@ -110,6 +104,15 @@ impl ApiClient {
             .await
             .map_err(ApiError::Request)
     }
+
+    async fn get_auth(&self, url: &str, token: &str) -> Result<Response, ApiError> {
+        self.client
+            .get(url)
+            .header("Authorization", format!("Bearer {token}"))
+            .send()
+            .await
+            .map_err(ApiError::Request)
+    }
 }
 
 /// Billing status
@@ -117,14 +120,7 @@ impl ApiClient {
     pub async fn billing_status(&self) -> Result<BillingStatus, ApiError> {
         let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
         let url = format!("{}/api/billing/status", self.base_url);
-
-        let r = self
-            .client
-            .get(&url)
-            .header("Authorization", format!("Bearer {token}"))
-            .send()
-            .await
-            .map_err(ApiError::Request)?;
+        let r = self.get_auth(&url, token).await?;
 
         let status = r.status();
 
