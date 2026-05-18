@@ -41,10 +41,21 @@ pub enum Commands {
         #[command(subcommand)]
         command: ConfigCommands,
     },
+    /// Manage workspaces
+    Workspaces {
+        #[command(subcommand)]
+        command: WorkspaceCommands,
+    },
 }
 
 #[derive(Subcommand)]
 pub enum ConfigCommands {
     /// Show current config
     Show,
+}
+
+#[derive(Subcommand)]
+pub enum WorkspaceCommands {
+    /// List workspaces
+    List,
 }

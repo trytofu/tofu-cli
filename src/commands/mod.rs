@@ -3,5 +3,6 @@ mod cli;
 pub mod cli_config;
 pub mod health;
 pub mod usage;
+pub mod workspaces;
 
-pub use cli::{Cli, Commands, ConfigCommands};
+pub use cli::{Cli, Commands, ConfigCommands, WorkspaceCommands};

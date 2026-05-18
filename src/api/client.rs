@@ -7,6 +7,7 @@ use crate::{
         billing_status::BillingStatus,
         health_status::HealthStatus,
         user_me::{DeviceLoginPoll, DeviceLoginStart, UserMe},
+        workspace::Workspace,
     },
 };
 
@@ -45,7 +46,7 @@ impl ApiClient {
         let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
         let url = format!("{}/api/me", self.base_url);
 
-        let r = self.get_auth(&url, token).await?;
+        let r = self.get_authenticated_response(&url, token).await?;
         let status = r.status();
 
         if status == StatusCode::UNAUTHORIZED {
@@ -105,13 +106,30 @@ impl ApiClient {
             .map_err(ApiError::Request)
     }
 
-    async fn get_auth(&self, url: &str, token: &str) -> Result<Response, ApiError> {
-        self.client
+    async fn get_authenticated_response(
+        &self,
+        url: &str,
+        token: &str,
+    ) -> Result<Response, ApiError> {
+        let response = self
+            .client
             .get(url)
             .header("Authorization", format!("Bearer {token}"))
             .send()
             .await
-            .map_err(ApiError::Request)
+            .map_err(ApiError::Request)?;
+
+        let status = response.status();
+
+        if status == StatusCode::UNAUTHORIZED {
+            return Err(ApiError::UnexpectedStatus { status });
+        }
+
+        if !status.is_success() {
+            return Err(api_error_from_response(response).await);
+        }
+
+        Ok(response)
     }
 }
 
@@ -120,14 +138,22 @@ impl ApiClient {
     pub async fn billing_status(&self) -> Result<BillingStatus, ApiError> {
         let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
         let url = format!("{}/api/billing/status", self.base_url);
-        let r = self.get_auth(&url, token).await?;
-
-        let status = r.status();
-
-        if !status.is_success() {
-            return Err(api_error_from_response(r).await);
-        }
+        let r = self.get_authenticated_response(&url, token).await?;
 
         r.json::<BillingStatus>().await.map_err(ApiError::Request)
+    }
+}
+
+/// Workspace
+impl ApiClient {
+    pub async fn list_workspaces(&self) -> Result<Vec<Workspace>, ApiError> {
+        let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
+        let url = format!("{}/api/workspaces", self.base_url);
+        let response = self.get_authenticated_response(&url, token).await?;
+
+        response
+            .json::<Vec<Workspace>>()
+            .await
+            .map_err(ApiError::Request)
     }
 }
