@@ -1,4 +1,5 @@
 use reqwest::{Client, Response, StatusCode};
+use serde_json::Value;
 
 use crate::{
     api::utils::api_error_from_response,
@@ -131,6 +132,29 @@ impl ApiClient {
 
         Ok(response)
     }
+
+    async fn put_authenticated_response(
+        &self,
+        url: &str,
+        token: &str,
+        body: &Value,
+    ) -> Result<Response, ApiError> {
+        let response = self
+            .client
+            .put(url)
+            .header("Authorization", format!("Bearer {token}"))
+            .json(&body)
+            .send()
+            .await
+            .map_err(ApiError::Request)?;
+
+        let status = response.status();
+        if !status.is_success() {
+            return Err(api_error_from_response(response).await);
+        }
+
+        Ok(response)
+    }
 }
 
 /// Billing status
@@ -155,5 +179,15 @@ impl ApiClient {
             .json::<Vec<Workspace>>()
             .await
             .map_err(ApiError::Request)
+    }
+
+    pub async fn set_active_workspace(&self, workspace_id: &str) -> Result<UserMe, ApiError> {
+        let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
+        let url = format!("{}/api/me/active-workspace", self.base_url);
+        let body = serde_json::json!({"workspace_id": workspace_id});
+
+        let response = self.put_authenticated_response(&url, token, &body).await?;
+
+        response.json::<UserMe>().await.map_err(ApiError::Request)
     }
 }

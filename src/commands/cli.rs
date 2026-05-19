@@ -58,4 +58,6 @@ pub enum ConfigCommands {
 pub enum WorkspaceCommands {
     /// List workspaces
     List,
+    /// Set active workspace
+    Use { slug: String, },
 }

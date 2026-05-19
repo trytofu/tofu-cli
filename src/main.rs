@@ -46,6 +46,7 @@ async fn main() {
         },
         Commands::Workspaces { command } => match command {
             WorkspaceCommands::List => workspaces::list(&api, cli.json).await,
+            WorkspaceCommands::Use { slug } => workspaces::cli_use(slug, &api, cli.json).await,
         },
     }
 }

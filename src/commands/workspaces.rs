@@ -1,4 +1,8 @@
-use crate::{api::ApiClient, models::api_error::ApiError, utils::output};
+use crate::{
+    api::ApiClient,
+    models::api_error::ApiError,
+    utils::{output, strings::slugify_workspace_slug},
+};
 
 pub async fn list(client: &ApiClient, json: bool) {
     match client.list_workspaces().await {
@@ -49,5 +53,63 @@ pub async fn list(client: &ApiClient, json: bool) {
             output::error(format!("Failed to list workspaces: {e}"));
             std::process::exit(1);
         }
+    }
+}
+
+pub async fn cli_use(slug: String, client: &ApiClient, json: bool) {
+    let workspaces = match client.list_workspaces().await {
+        Ok(w) => w,
+        Err(ApiError::NotAuthenticated) => {
+            output::error("Not authenticated.");
+            output::warning(format!("Run {}.", output::command("tofu login")));
+            std::process::exit(1);
+        }
+        Err(ApiError::UnexpectedStatus { status })
+            if status == reqwest::StatusCode::UNAUTHORIZED =>
+        {
+            output::error("Invalid token.");
+            output::warning(format!(
+                "Run {} to re-authenticate.",
+                output::command("tofu login")
+            ));
+            std::process::exit(1);
+        }
+        Err(e) => {
+            output::error(format!("Failed to list workspaces: {e}"));
+            std::process::exit(1);
+        }
+    };
+
+    let normalised_slug = slugify_workspace_slug(&slug);
+    let workspace = workspaces
+        .iter()
+        .find(|w| w.slug == slug)
+        .or_else(|| workspaces.iter().find(|w| w.slug == normalised_slug));
+
+    let Some(workspace) = workspace else {
+        output::error(format!("Workspace '{slug}' not found."));
+        output::warning(format!(
+            "Run {} to see available workspaces.",
+            output::command("tofu workspaces list")
+        ));
+        std::process::exit(1);
+    };
+
+    let active_slug = workspace.slug.clone();
+    if let Err(e) = client.set_active_workspace(&workspace.id).await {
+        output::error(format!("Failed to set active workspace: {e}"));
+        std::process::exit(1);
+    }
+
+    if json {
+        println!(
+            "{}",
+            serde_json::json!({
+                "status": "ok",
+                "active_workspace": active_slug,
+            })
+        );
+    } else {
+        output::success(format!("Active workspace set to: {active_slug}"));
     }
 }
