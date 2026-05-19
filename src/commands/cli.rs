@@ -59,5 +59,15 @@ pub enum WorkspaceCommands {
     /// List workspaces
     List,
     /// Set active workspace
-    Use { slug: String, },
+    Use { slug: String },
+    /// Create a workspace
+    Create {
+        #[arg(
+            value_name = "NAME_OR_SLUG",
+            help = "workspace name or slug. Name-like values will be slugified automatically"
+        )]
+        slug: String,
+        #[arg(long, help = "workspace display name")]
+        name: Option<String>,
+    },
 }

@@ -133,6 +133,34 @@ impl ApiClient {
         Ok(response)
     }
 
+    async fn post_authenticated_response(
+        &self,
+        url: &str,
+        token: &str,
+        body: &Value,
+    ) -> Result<Response, ApiError> {
+        let response = self
+            .client
+            .post(url)
+            .header("Authorization", format!("Bearer {token}"))
+            .json(&body)
+            .send()
+            .await
+            .map_err(ApiError::Request)?;
+
+        let status = response.status();
+
+        if status == StatusCode::UNAUTHORIZED {
+            return Err(ApiError::UnexpectedStatus { status });
+        }
+
+        if !status.is_success() {
+            return Err(api_error_from_response(response).await);
+        }
+
+        Ok(response)
+    }
+
     async fn put_authenticated_response(
         &self,
         url: &str,
@@ -149,10 +177,14 @@ impl ApiClient {
             .map_err(ApiError::Request)?;
 
         let status = response.status();
+
+        if status == StatusCode::UNAUTHORIZED {
+            return Err(ApiError::UnexpectedStatus { status });
+        }
+
         if !status.is_success() {
             return Err(api_error_from_response(response).await);
         }
-
         Ok(response)
     }
 }
@@ -189,5 +221,23 @@ impl ApiClient {
         let response = self.put_authenticated_response(&url, token, &body).await?;
 
         response.json::<UserMe>().await.map_err(ApiError::Request)
+    }
+
+    pub async fn create_workspace(
+        &self,
+        name: String,
+        slug: String,
+    ) -> Result<Workspace, ApiError> {
+        let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
+        let url = format!("{}/api/workspaces", self.base_url);
+
+        let body = serde_json::json!({ "name": name, "slug": slug });
+
+        let response = self.post_authenticated_response(&url, token, &body).await?;
+
+        response
+            .json::<Workspace>()
+            .await
+            .map_err(ApiError::Request)
     }
 }

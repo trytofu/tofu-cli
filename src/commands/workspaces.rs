@@ -56,7 +56,7 @@ pub async fn list(client: &ApiClient, json: bool) {
     }
 }
 
-pub async fn cli_use(slug: String, client: &ApiClient, json: bool) {
+pub async fn cli_use(client: &ApiClient, slug: String, json: bool) {
     let workspaces = match client.list_workspaces().await {
         Ok(w) => w,
         Err(ApiError::NotAuthenticated) => {
@@ -111,5 +111,60 @@ pub async fn cli_use(slug: String, client: &ApiClient, json: bool) {
         );
     } else {
         output::success(format!("Active workspace set to: {active_slug}"));
+    }
+}
+
+pub async fn create(client: &ApiClient, slug: String, name: Option<String>, json: bool) {
+    let name = name.unwrap_or_else(|| slug.clone());
+    let slug = slugify_workspace_slug(&slug);
+
+    if slug.is_empty() {
+        output::error("Workspace slug cannot be empty.");
+        std::process::exit(1);
+    }
+
+    match client.create_workspace(name, slug).await {
+        Ok(workspace) => {
+            if json {
+                println!(
+                    "{}",
+                    serde_json::json!({
+                        "id": workspace.id,
+                        "name": workspace.name,
+                        "slug": workspace.slug,
+                        "created_at": workspace.created_at,
+                        "updated_at": workspace.updated_at,
+                    })
+                );
+            } else {
+                output::success(format!(
+                    "Created workspace: {} ({})",
+                    workspace.name, workspace.slug
+                ));
+            }
+        }
+        Err(ApiError::NotAuthenticated) => {
+            output::error("Not authenticated.");
+            output::warning(format!("Run {}.", output::command("tofu login")));
+            std::process::exit(1);
+        }
+        Err(ApiError::UnexpectedStatus { status })
+            if status == reqwest::StatusCode::UNAUTHORIZED =>
+        {
+            output::error("Invalid token.");
+            output::warning(format!(
+                "Run {} to re-authenticate.",
+                output::command("tofu login")
+            ));
+            std::process::exit(1);
+        }
+        Err(ApiError::UnexpectedStatus { status }) if status == reqwest::StatusCode::CONFLICT => {
+            output::error("Workspace slug already exists.");
+            std::process::exit(1);
+        }
+        Err(e) => {
+            output::error(format!("Failed to create workspace: {e}"));
+            std::process::exit(1);
+        }
     }
 }
