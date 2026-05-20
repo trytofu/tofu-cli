@@ -37,7 +37,7 @@ pub fn logout(config: &mut Config, json: bool) {
             serde_json::json!({
                 "status": "ok"
             })
-        )
+        );
     } else {
         output::success("Logged out.");
     }
@@ -91,7 +91,7 @@ async fn login_with_token(
     api_base_url: Option<String>,
     json: bool,
 ) {
-    complete_login(config, token, api_base_url, json).await
+    complete_login(config, token, api_base_url, json).await;
 }
 
 async fn device_login(
@@ -142,24 +142,26 @@ async fn device_login(
     }
 
     let token = poll_until_approved(&client, &started).await;
-    complete_login(config, token, api_base_url, json).await
+    complete_login(config, token, api_base_url, json).await;
 }
 
 async fn poll_until_approved(client: &ApiClient, started: &DeviceLoginStart) -> String {
-    let interval = started.interval.clamp(1, 10) as u64;
-    let max_attempts = ((started.expires_in.max(1) as u64) / interval).saturating_add(1);
+    let interval = u64::try_from(started.interval.clamp(1, 10)).unwrap_or(1);
+    let expires_in = u64::try_from(started.expires_in.max(1)).unwrap_or(1);
+
+    let max_attempts = (expires_in / interval).saturating_add(1);
 
     for _ in 0..max_attempts {
         sleep(Duration::from_secs(interval)).await;
 
         match client.poll_device_login(&started.device_code).await {
-            Ok(poll) if poll.status == "approved" => match poll.token {
-                Some(token) => return token,
-                None => {
+            Ok(poll) if poll.status == "approved" => {
+                let Some(token) = poll.token else {
                     output::error("Device login was approved, but no token was returned.");
                     std::process::exit(1);
-                }
-            },
+                };
+                return token;
+            }
             Ok(poll) if poll.status == "pending" => {}
             Ok(poll) if poll.status == "denied" => {
                 output::error("Device login denied.");

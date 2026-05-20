@@ -1,3 +1,4 @@
+#![warn(clippy::pedantic)]
 use clap::Parser;
 
 use crate::{
@@ -35,7 +36,7 @@ async fn main() {
                 no_browser,
                 cli.json,
             )
-            .await
+            .await;
         }
         Commands::Logout => auth::logout(&mut config, cli.json),
         Commands::Whoami => auth::whoami(&api, cli.json).await,
@@ -47,7 +48,7 @@ async fn main() {
             WorkspaceCommands::List => workspaces::list(&api, cli.json).await,
             WorkspaceCommands::Use { slug } => workspaces::cli_use(&api, slug, cli.json).await,
             WorkspaceCommands::Create { slug, name } => {
-                workspaces::create(&api, slug, name, cli.json).await
+                workspaces::create(&api, slug, name, cli.json).await;
             }
             WorkspaceCommands::Members { command } => match command {
                 MembersCommands::List => workspaces::members_list(&api, cli.json).await,

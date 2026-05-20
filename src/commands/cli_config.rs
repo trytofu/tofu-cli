@@ -1,10 +1,7 @@
 use crate::{config::Config, utils::output};
 
 pub fn show(config: &Config, json: bool) {
-    let path = Config::path()
-        .map(|p| p.display().to_string())
-        .unwrap_or_else(|| "(unknown)".to_string());
-
+    let path = Config::path().map_or_else(|| "(unknown)".to_string(), |p| p.display().to_string());
     let token = config.resolve_token();
 
     if json {
@@ -27,15 +24,12 @@ pub fn show(config: &Config, json: bool) {
                     config
                         .api_base_url
                         .as_deref()
-                        .map(|url| output::url_cell(url.to_string()))
-                        .unwrap_or_else(|| output::cell("(not set)")),
+                        .map_or_else(|| output::cell("(not set)"), output::url_cell)
                 ),
                 (
                     "Token",
                     output::cell(
-                        token
-                            .map(|_| "<redacted>".to_string())
-                            .unwrap_or_else(|| "(not set)".to_string()),
+                        token.map_or_else(|| "<redacted>".to_string(), |_| "(not set)".to_string())
                     ),
                 ),
             ])
