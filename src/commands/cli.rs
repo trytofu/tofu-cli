@@ -70,4 +70,16 @@ pub enum WorkspaceCommands {
         #[arg(long, help = "workspace display name")]
         name: Option<String>,
     },
+    /// Manage workspace members
+    Members {
+        #[command(subcommand)]
+        command: MembersCommands,
+    },
 }
+
+#[derive(Subcommand)]
+pub enum MembersCommands {
+    /// List members
+    List,
+}
+

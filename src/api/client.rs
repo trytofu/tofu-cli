@@ -7,6 +7,7 @@ use crate::{
         api_error::ApiError,
         billing_status::BillingStatus,
         health_status::HealthStatus,
+        member::Member,
         user_me::{DeviceLoginPoll, DeviceLoginStart, UserMe},
         workspace::Workspace,
     },
@@ -230,13 +231,22 @@ impl ApiClient {
     ) -> Result<Workspace, ApiError> {
         let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
         let url = format!("{}/api/workspaces", self.base_url);
-
         let body = serde_json::json!({ "name": name, "slug": slug });
-
         let response = self.post_authenticated_response(&url, token, &body).await?;
 
         response
             .json::<Workspace>()
+            .await
+            .map_err(ApiError::Request)
+    }
+
+    pub async fn list_members(&self, workspace_id: &str) -> Result<Vec<Member>, ApiError> {
+        let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
+        let url = format!("{}/api/workspaces/{workspace_id}/members", self.base_url);
+
+        let response = self.get_authenticated_response(&url, token).await?;
+        response
+            .json::<Vec<Member>>()
             .await
             .map_err(ApiError::Request)
     }

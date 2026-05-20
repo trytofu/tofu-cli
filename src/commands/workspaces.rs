@@ -1,7 +1,7 @@
 use crate::{
     api::ApiClient,
     models::api_error::ApiError,
-    utils::{output, strings::slugify_workspace_slug},
+    utils::{output, strings::slugify_workspace_slug, time::fmt_time},
 };
 
 pub async fn list(client: &ApiClient, json: bool) {
@@ -166,5 +166,69 @@ pub async fn create(client: &ApiClient, slug: String, name: Option<String>, json
             output::error(format!("Failed to create workspace: {e}"));
             std::process::exit(1);
         }
+    }
+}
+
+pub async fn members_list(client: &ApiClient, json: bool) {
+    let workspace_id = match resolove_workspace_id(client).await {
+        Some(id) => id,
+        None => {
+            eprintln!(
+                "No active workspace set. Run `tofu workspaces use <slug>` or check your access."
+            );
+            std::process::exit(1);
+        }
+    };
+
+    match client.list_members(&workspace_id).await {
+        Ok(members) => {
+            if json {
+                println!(
+                    "{}",
+                    serde_json::json!({
+                        "members": members,
+                    })
+                );
+            } else if members.is_empty() {
+                output::empty(
+                    "No members found. Add one with: tofu workspaces members add <email>",
+                );
+            } else {
+                let mut t = output::data_table(&["Email", "Role", "Created"]);
+                for m in members {
+                    t.add_row(vec![
+                        output::cell(m.email),
+                        output::cell(m.role),
+                        output::cell(fmt_time(&m.created_at)),
+                    ]);
+                }
+                println!("{t}");
+            }
+        }
+        Err(ApiError::NotAuthenticated) => {
+            eprintln!("Not authenticated. Run `tofu login`");
+            std::process::exit(1);
+        }
+        Err(ApiError::UnexpectedStatus { status })
+            if status == reqwest::StatusCode::UNAUTHORIZED =>
+        {
+            eprintln!("Invalid token. Run `tofu login` to re-authenticate.");
+            std::process::exit(1);
+        }
+        Err(ApiError::UnexpectedStatus { status }) if status == reqwest::StatusCode::NOT_FOUND => {
+            eprintln!("Workspace not found or you do not have access.");
+            std::process::exit(1);
+        }
+        Err(e) => {
+            eprintln!("Failed to list members: {e}");
+            std::process::exit(1);
+        }
+    }
+}
+
+async fn resolove_workspace_id(client: &ApiClient) -> Option<String> {
+    match client.me().await {
+        Ok(u) => u.active_workspace_id,
+        Err(_) => None,
     }
 }

@@ -5,4 +5,4 @@ pub mod health;
 pub mod usage;
 pub mod workspaces;
 
-pub use cli::{Cli, Commands, ConfigCommands, WorkspaceCommands};
+pub use cli::{Cli, Commands, ConfigCommands, MembersCommands, WorkspaceCommands};

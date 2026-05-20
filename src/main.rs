@@ -3,8 +3,7 @@ use clap::Parser;
 use crate::{
     api::ApiClient,
     commands::{
-        Cli, Commands, ConfigCommands, WorkspaceCommands, auth, cli_config, health, usage,
-        workspaces,
+        Cli, Commands, ConfigCommands, MembersCommands, WorkspaceCommands, auth, cli_config, health, usage, workspaces
     },
     config::Config,
 };
@@ -50,6 +49,9 @@ async fn main() {
             WorkspaceCommands::Create { slug, name } => {
                 workspaces::create(&api, slug, name, cli.json).await
             }
+            WorkspaceCommands::Members { command } => match command {
+                MembersCommands::List => workspaces::members_list(&api, cli.json).await,
+            },
         },
     }
 }
