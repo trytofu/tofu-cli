@@ -170,14 +170,11 @@ pub async fn create(client: &ApiClient, slug: String, name: Option<String>, json
 }
 
 pub async fn members_list(client: &ApiClient, json: bool) {
-    let workspace_id = match resolove_workspace_id(client).await {
-        Some(id) => id,
-        None => {
-            eprintln!(
-                "No active workspace set. Run `tofu workspaces use <slug>` or check your access."
-            );
-            std::process::exit(1);
-        }
+    let Some(workspace_id) = resolove_workspace_id(client).await else {
+        eprintln!(
+        "No active workspace set. Run `tofu workspaces use <slug>` or check your access."
+    );
+        std::process::exit(1);
     };
 
     match client.list_members(&workspace_id).await {

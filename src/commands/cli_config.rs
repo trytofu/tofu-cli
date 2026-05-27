@@ -29,7 +29,7 @@ pub fn show(config: &Config, json: bool) {
                 (
                     "Token",
                     output::cell(
-                        token.map_or_else(|| "<redacted>".to_string(), |_| "(not set)".to_string())
+                        token.map_or_else(|| "(not set)".to_string(), |_| "<redacted>".to_string())
                     ),
                 ),
             ])

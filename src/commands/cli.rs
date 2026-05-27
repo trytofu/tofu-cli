@@ -82,4 +82,3 @@ pub enum MembersCommands {
     /// List members
     List,
 }
-

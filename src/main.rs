@@ -4,7 +4,8 @@ use clap::Parser;
 use crate::{
     api::ApiClient,
     commands::{
-        Cli, Commands, ConfigCommands, MembersCommands, WorkspaceCommands, auth, cli_config, health, usage, workspaces
+        Cli, Commands, ConfigCommands, MembersCommands, WorkspaceCommands, auth, cli_config,
+        health, usage, workspaces,
     },
     config::Config,
 };
