@@ -250,4 +250,14 @@ impl ApiClient {
             .await
             .map_err(ApiError::Request)
     }
+
+    pub async fn add_member(&self, workspace_id: &str, email: String) -> Result<(), ApiError> {
+        let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
+        let url = format!("{}/api/workspaces/{workspace_id}/members", self.base_url);
+
+        let body = serde_json::json!({ "email": email, "role": "member" });
+        self.post_authenticated_response(&url, token, &body).await?;
+        
+        Ok(())
+    }
 }

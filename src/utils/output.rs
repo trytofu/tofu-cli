@@ -6,6 +6,8 @@ use comfy_table::{
     presets::UTF8_FULL_CONDENSED,
 };
 
+use crate::api::PlanLimitApiError;
+
 #[derive(Clone, Copy)]
 pub enum Tone {
     Success,
@@ -210,4 +212,9 @@ fn table_color(tone: Tone) -> TableColor {
         Tone::Info => TableColor::Cyan,
         Tone::Muted => TableColor::DarkGrey,
     }
+}
+
+pub fn print_plan_limit_error(err: &PlanLimitApiError) {
+    error(&err.message);
+    warning(format!("Upgrade: {}", url(&err.upgrade_url)));
 }

@@ -53,6 +53,7 @@ async fn main() {
             }
             WorkspaceCommands::Members { command } => match command {
                 MembersCommands::List => workspaces::members_list(&api, cli.json).await,
+                MembersCommands::Add { email } => workspaces::members_add(&api, email, cli.json).await,
             },
         },
     }

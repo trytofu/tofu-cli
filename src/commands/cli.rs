@@ -81,4 +81,6 @@ pub enum WorkspaceCommands {
 pub enum MembersCommands {
     /// List members
     List,
+    /// Add a member by email
+    Add { email: String }
 }

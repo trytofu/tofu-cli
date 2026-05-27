@@ -1,7 +1,7 @@
 use crate::{
     api::ApiClient,
     models::api_error::ApiError,
-    utils::{output, strings::slugify_workspace_slug, time::fmt_time},
+    utils::{output::{self, print_plan_limit_error}, strings::slugify_workspace_slug, time::fmt_time},
 };
 
 pub async fn list(client: &ApiClient, json: bool) {
@@ -172,8 +172,8 @@ pub async fn create(client: &ApiClient, slug: String, name: Option<String>, json
 pub async fn members_list(client: &ApiClient, json: bool) {
     let Some(workspace_id) = resolove_workspace_id(client).await else {
         eprintln!(
-        "No active workspace set. Run `tofu workspaces use <slug>` or check your access."
-    );
+            "No active workspace set. Run `tofu workspaces use <slug>` or check your access."
+        );
         std::process::exit(1);
     };
 
@@ -218,6 +218,57 @@ pub async fn members_list(client: &ApiClient, json: bool) {
         }
         Err(e) => {
             eprintln!("Failed to list members: {e}");
+            std::process::exit(1);
+        }
+    }
+}
+
+pub async fn members_add(client: &ApiClient, email: String, json: bool) {
+    let Some(workspace_id) = resolove_workspace_id(client).await else {
+        eprintln!(
+            "No active workspace set. Run `tofu workspaces use <slug>` or check your access."
+        );
+        std::process::exit(1);
+    };
+
+    match client.add_member(&workspace_id, email.clone()).await {
+        Ok(()) => {
+            if json {
+                println!(
+                    "{}",
+                    serde_json::json!({
+                        "status": "ok",
+                        "email": email,
+                    })
+                );
+            } else {
+                output::success(format!("Added member: {email}"));
+            }
+        }
+        Err(ApiError::NotAuthenticated) => {
+            eprintln!("Not authenticated. Run `tofu login`");
+            std::process::exit(1);
+        }
+        Err(ApiError::UnexpectedStatus { status })
+            if status == reqwest::StatusCode::UNAUTHORIZED =>
+        {
+            eprintln!("Invalid token. Run `tofu login` to re-authenticate.");
+            std::process::exit(1);
+        }
+        Err(ApiError::UnexpectedStatus { status }) if status == reqwest::StatusCode::NOT_FOUND => {
+            eprintln!("Workspace not found or user does not exist.");
+            std::process::exit(1);
+        }
+        Err(ApiError::UnexpectedStatus { status }) if status == reqwest::StatusCode::CONFLICT => {
+            eprintln!("User is already a member of this workspace.");
+            std::process::exit(1);
+        }
+        Err(ApiError::PlanLimitReached(err)) => {
+            print_plan_limit_error(&err);
+            std::process::exit(1);
+        }
+        Err(e) => {
+            eprintln!("Failed to add member: {e}");
             std::process::exit(1);
         }
     }
