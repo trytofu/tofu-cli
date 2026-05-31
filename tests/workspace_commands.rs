@@ -239,3 +239,111 @@ fn workspace_members_list_uses_active_workspace() {
 
     fs::remove_dir_all(home).expect("remove temp home");
 }
+
+#[test]
+fn workspace_members_add_uses_active_workspace() {
+    let user = r#"{
+        "id": "user_1",
+        "email": "dev@example.com",
+        "created_at": "2026-01-01T00:00:00Z",
+        "active_workspace_id": "workspace_1"
+    }"#;
+    let server = MockServer::start(vec![ok_json(user), ok_json("{}")]);
+    let base_url = server.base_url.clone();
+    let home = temp_home("workspace-members-add");
+    write_config(
+        &home,
+        &format!("api_base_url = \"{base_url}\"\ntoken = \"tofu_pat_saved\"\n"),
+    );
+
+    let output = Command::new(env!("CARGO_BIN_EXE_tofu-cli"))
+        .env("HOME", &home)
+        .args([
+            "--json",
+            "workspaces",
+            "members",
+            "add",
+            "teammate@example.com",
+        ])
+        .output()
+        .expect("run tofu-cli workspaces members add");
+
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains(r#""status":"ok""#));
+    assert!(stdout.contains(r#""email":"teammate@example.com""#));
+
+    let requests = server.finish();
+    assert_eq!(requests.len(), 2);
+    assert_eq!(requests[0].method, "GET");
+    assert_eq!(requests[0].path, "/api/me");
+    assert_eq!(
+        requests[0].header("authorization"),
+        Some("Bearer tofu_pat_saved")
+    );
+    assert_eq!(requests[1].method, "POST");
+    assert_eq!(requests[1].path, "/api/workspaces/workspace_1/members");
+    assert_eq!(
+        requests[1].header("authorization"),
+        Some("Bearer tofu_pat_saved")
+    );
+    assert!(
+        requests[1]
+            .body
+            .contains(r#""email":"teammate@example.com""#)
+    );
+    assert!(requests[1].body.contains(r#""role":"member""#));
+
+    fs::remove_dir_all(home).expect("remove temp home");
+}
+
+#[test]
+fn workspace_members_add_requires_active_workspace() {
+    let user = r#"{
+        "id": "user_1",
+        "email": "dev@example.com",
+        "created_at": "2026-01-01T00:00:00Z",
+        "active_workspace_id": null
+    }"#;
+    let server = MockServer::start(vec![ok_json(user)]);
+    let base_url = server.base_url.clone();
+    let home = temp_home("workspace-members-add-no-active-workspace");
+    write_config(
+        &home,
+        &format!("api_base_url = \"{base_url}\"\ntoken = \"tofu_pat_saved\"\n"),
+    );
+
+    let output = Command::new(env!("CARGO_BIN_EXE_tofu-cli"))
+        .env("HOME", &home)
+        .args(["workspaces", "members", "add", "teammate@example.com"])
+        .output()
+        .expect("run tofu-cli workspaces members add");
+
+    assert!(
+        !output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("No active workspace set"),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let requests = server.finish();
+    assert_eq!(requests.len(), 1);
+    assert_eq!(requests[0].method, "GET");
+    assert_eq!(requests[0].path, "/api/me");
+    assert_eq!(
+        requests[0].header("authorization"),
+        Some("Bearer tofu_pat_saved")
+    );
+
+    fs::remove_dir_all(home).expect("remove temp home");
+}
