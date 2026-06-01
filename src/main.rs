@@ -4,8 +4,8 @@ use clap::Parser;
 use crate::{
     api::ApiClient,
     commands::{
-        Cli, Commands, ConfigCommands, MembersCommands, WorkspaceCommands, auth, cli_config,
-        health, usage, workspaces,
+        Cli, Commands, ConfigCommands, HooksCommands, MembersCommands, WorkspaceCommands, auth,
+        cli_config, health, hooks, usage, workspaces,
     },
     config::Config,
 };
@@ -53,8 +53,16 @@ async fn main() {
             }
             WorkspaceCommands::Members { command } => match command {
                 MembersCommands::List => workspaces::members_list(&api, cli.json).await,
-                MembersCommands::Add { email } => workspaces::members_add(&api, email, cli.json).await,
+                MembersCommands::Add { email } => {
+                    workspaces::members_add(&api, email, cli.json).await;
+                }
             },
+        },
+        Commands::Hooks { command } => match command {
+            HooksCommands::List => hooks::list(&api, cli.json).await,
+            HooksCommands::Create { slug, name } => {
+                hooks::create_hook(&api, slug, name, cli.json).await
+            }
         },
     }
 }

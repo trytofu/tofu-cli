@@ -1,7 +1,12 @@
 use crate::{
     api::ApiClient,
     models::api_error::ApiError,
-    utils::{output::{self, print_plan_limit_error}, strings::slugify_workspace_slug, time::fmt_time},
+    utils::{
+        output::{self, print_plan_limit_error},
+        strings::slugify_workspace_slug,
+        time::fmt_time,
+        workspace::resolve_workspace_id,
+    },
 };
 
 pub async fn list(client: &ApiClient, json: bool) {
@@ -170,7 +175,7 @@ pub async fn create(client: &ApiClient, slug: String, name: Option<String>, json
 }
 
 pub async fn members_list(client: &ApiClient, json: bool) {
-    let Some(workspace_id) = resolove_workspace_id(client).await else {
+    let Some(workspace_id) = resolve_workspace_id(client).await else {
         eprintln!(
             "No active workspace set. Run `tofu workspaces use <slug>` or check your access."
         );
@@ -224,7 +229,7 @@ pub async fn members_list(client: &ApiClient, json: bool) {
 }
 
 pub async fn members_add(client: &ApiClient, email: String, json: bool) {
-    let Some(workspace_id) = resolove_workspace_id(client).await else {
+    let Some(workspace_id) = resolve_workspace_id(client).await else {
         eprintln!(
             "No active workspace set. Run `tofu workspaces use <slug>` or check your access."
         );
@@ -271,12 +276,5 @@ pub async fn members_add(client: &ApiClient, email: String, json: bool) {
             eprintln!("Failed to add member: {e}");
             std::process::exit(1);
         }
-    }
-}
-
-async fn resolove_workspace_id(client: &ApiClient) -> Option<String> {
-    match client.me().await {
-        Ok(u) => u.active_workspace_id,
-        Err(_) => None,
     }
 }

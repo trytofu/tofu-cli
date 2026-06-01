@@ -7,6 +7,7 @@ use crate::{
         api_error::ApiError,
         billing_status::BillingStatus,
         health_status::HealthStatus,
+        hook::Hook,
         member::Member,
         user_me::{DeviceLoginPoll, DeviceLoginStart, UserMe},
         workspace::Workspace,
@@ -257,7 +258,35 @@ impl ApiClient {
 
         let body = serde_json::json!({ "email": email, "role": "member" });
         self.post_authenticated_response(&url, token, &body).await?;
-        
+
         Ok(())
+    }
+}
+
+// Hooks
+impl ApiClient {
+    pub async fn list_hooks(&self, workspace_id: &str) -> Result<Vec<Hook>, ApiError> {
+        let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
+        let url = format!("{}/api/workspaces/{workspace_id}/hooks", self.base_url);
+
+        let response = self.get_authenticated_response(&url, token).await?;
+        response
+            .json::<Vec<Hook>>()
+            .await
+            .map_err(ApiError::Request)
+    }
+
+    pub async fn create_hook(
+        &self,
+        workspace_id: &str,
+        name: String,
+        slug: String,
+    ) -> Result<Hook, ApiError> {
+        let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
+        let url = format!("{}/api/workspaces/{workspace_id}/hooks", self.base_url);
+        let body = serde_json::json!({ "name": name, "slug": slug });
+
+        let response = self.post_authenticated_response(&url, token, &body).await?;
+        response.json::<Hook>().await.map_err(ApiError::Request)
     }
 }

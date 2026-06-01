@@ -46,6 +46,23 @@ pub enum Commands {
         #[command(subcommand)]
         command: WorkspaceCommands,
     },
+    /// Manage hooks
+    Hooks {
+        #[command(subcommand)]
+        command: HooksCommands,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum HooksCommands {
+    /// List hooks in the active workspace
+    List,
+    /// Create a hook
+    Create {
+        slug: String,
+        #[arg(long, help = "Hook display name")]
+        name: Option<String>,
+    },
 }
 
 #[derive(Subcommand)]
@@ -82,5 +99,5 @@ pub enum MembersCommands {
     /// List members
     List,
     /// Add a member by email
-    Add { email: String }
+    Add { email: String },
 }
