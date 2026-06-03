@@ -5,7 +5,7 @@ use crate::{
         output::{self, print_plan_limit_error},
         strings::slugify_workspace_slug,
         time::fmt_time,
-        workspace::resolve_workspace_id,
+        workspace::resolve_workspace_id_or_exit,
     },
 };
 
@@ -175,12 +175,7 @@ pub async fn create(client: &ApiClient, slug: String, name: Option<String>, json
 }
 
 pub async fn members_list(client: &ApiClient, json: bool) {
-    let Some(workspace_id) = resolve_workspace_id(client).await else {
-        eprintln!(
-            "No active workspace set. Run `tofu workspaces use <slug>` or check your access."
-        );
-        std::process::exit(1);
-    };
+    let workspace_id = resolve_workspace_id_or_exit(client).await;
 
     match client.list_members(&workspace_id).await {
         Ok(members) => {
@@ -229,12 +224,7 @@ pub async fn members_list(client: &ApiClient, json: bool) {
 }
 
 pub async fn members_add(client: &ApiClient, email: String, json: bool) {
-    let Some(workspace_id) = resolve_workspace_id(client).await else {
-        eprintln!(
-            "No active workspace set. Run `tofu workspaces use <slug>` or check your access."
-        );
-        std::process::exit(1);
-    };
+    let workspace_id = resolve_workspace_id_or_exit(client).await;
 
     match client.add_member(&workspace_id, email.clone()).await {
         Ok(()) => {

@@ -4,13 +4,7 @@ use serde_json::Value;
 use crate::{
     api::utils::api_error_from_response,
     models::{
-        api_error::ApiError,
-        billing_status::BillingStatus,
-        health_status::HealthStatus,
-        hook::Hook,
-        member::Member,
-        user_me::{DeviceLoginPoll, DeviceLoginStart, UserMe},
-        workspace::Workspace,
+        api_error::ApiError, billing_status::BillingStatus, health_status::HealthStatus, hook::Hook, member::Member, target::Target, user_me::{DeviceLoginPoll, DeviceLoginStart, UserMe}, workspace::Workspace
     },
 };
 
@@ -288,5 +282,24 @@ impl ApiClient {
 
         let response = self.post_authenticated_response(&url, token, &body).await?;
         response.json::<Hook>().await.map_err(ApiError::Request)
+    }
+
+    #[allow(dead_code)]
+    pub async fn get_hook(&self, hook_id: &str) -> Result<Hook, ApiError> {
+        let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
+        let url = format!("{}/api/hooks/{hook_id}", self.base_url);
+
+        let response = self.get_authenticated_response(&url, token).await?;
+        response.json::<Hook>().await.map_err(ApiError::Request)
+    }
+}
+
+// Targets
+impl ApiClient {
+    pub async fn list_targets(&self, hook_id: &str) -> Result<Vec<Target>, ApiError> {
+        let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
+        let url = format!("{}/api/hooks/{hook_id}/targets", self.base_url);
+        let r = self.get_authenticated_response(&url, token).await?;
+        r.json::<Vec<Target>>().await.map_err(ApiError::Request)
     }
 }

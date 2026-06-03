@@ -63,6 +63,10 @@ pub enum HooksCommands {
         #[arg(long, help = "Hook display name")]
         name: Option<String>,
     },
+    /// Show provider URL for a hook
+    Url { slug: String },
+    /// Show hook status
+    Status { slug: String },
 }
 
 #[derive(Subcommand)]

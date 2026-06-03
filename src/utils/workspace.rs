@@ -1,26 +1,57 @@
-use crate::{api::ApiClient, utils::output};
+use crate::{
+    api::ApiClient,
+    models::{api_error::ApiError, hook::Hook},
+    utils::{api_errors::exit_api_error, output},
+};
 
-pub async fn resolve_workspace_id(client: &ApiClient) -> Option<String> {
-    match client.me().await {
-        Ok(u) => u.active_workspace_id,
-        Err(_) => None,
-    }
+pub async fn resolve_workspace_id(client: &ApiClient) -> Result<Option<String>, ApiError> {
+    client.me().await.map(|user| user.active_workspace_id)
 }
 
 pub async fn resolve_workspace_id_or_exit(client: &ApiClient) -> String {
-    let Some(workspace_id) = resolve_workspace_id(client).await else {
-        output::error("No active workspace set.");
-        output::warning(format!(
-            "Run {} or check your access.",
-            output::command("tofu workspaces use <slug>")
-        ));
-        std::process::exit(1);
-    };
-
-    workspace_id
+    match resolve_workspace_id(client).await {
+        Ok(Some(workspace_id)) => workspace_id,
+        Ok(None) => exit_no_active_workspace(),
+        Err(e) => exit_api_error(e, "resolve active workspace", None),
+    }
 }
 
-#[allow(dead_code)]
-pub async fn resolove_workspace_id(client: &ApiClient) -> Option<String> {
-    resolve_workspace_id(client).await
+pub async fn resolve_hook_in_workspace(
+    client: &ApiClient,
+    workspace_id: &str,
+    slug: &str,
+) -> Result<Option<Hook>, ApiError> {
+    let hooks = client.list_hooks(workspace_id).await?;
+    Ok(hooks.into_iter().find(|h| h.slug == slug))
+}
+
+pub async fn resolve_hook_or_exit(client: &ApiClient, slug: &str) -> Hook {
+    let workspace_id = resolve_workspace_id_or_exit(client).await;
+    match resolve_hook_in_workspace(client, &workspace_id, slug).await {
+        Ok(Some(hook)) => hook,
+        Ok(None) => exit_hook_not_found(slug),
+        Err(e) => exit_api_error(
+            e,
+            "resolve hook",
+            Some("Workspace not found or you do not have access."),
+        ),
+    }
+}
+
+fn exit_no_active_workspace() -> ! {
+    output::error("No active workspace set.");
+    output::warning(format!(
+        "Run {} or check your access.",
+        output::command("tofu workspaces use <slug>")
+    ));
+    std::process::exit(1);
+}
+
+fn exit_hook_not_found(slug: &str) -> ! {
+    output::error(format!("Hook '{slug}' not found."));
+    output::warning(format!(
+        "Run {} to see available hooks.",
+        output::command("tofu hooks list")
+    ));
+    std::process::exit(1);
 }
