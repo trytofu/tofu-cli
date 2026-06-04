@@ -38,6 +38,60 @@ pub async fn resolve_hook_or_exit(client: &ApiClient, slug: &str) -> Hook {
     }
 }
 
+#[allow(dead_code)]
+pub async fn resolve_target_id(
+    client: &ApiClient,
+    hook_slug: &str,
+    target_name: &str,
+) -> Result<Option<String>, ApiError> {
+    let Some(workspace_id) = resolve_workspace_id(client).await? else {
+        return Ok(None);
+    };
+
+    let Some(hook) = resolve_hook_in_workspace(client, &workspace_id, hook_slug).await? else {
+        return Ok(None);
+    };
+
+    let targets = client.list_targets(&hook.id).await?;
+
+    Ok(targets
+        .into_iter()
+        .find(|t| t.name == target_name)
+        .map(|t| t.id))
+}
+
+pub async fn resolve_target_id_or_exit(
+    client: &ApiClient,
+    hook_slug: &str,
+    target_name: &str,
+) -> String {
+    let hook = resolve_hook_or_exit(client, hook_slug).await;
+
+    match client.list_targets(&hook.id).await {
+        Ok(targets) => targets
+            .into_iter()
+            .find(|target| target.name == target_name)
+            .map(|target| target.id)
+            .unwrap_or_else(|| exit_target_not_found(target_name, hook_slug)),
+        Err(e) => exit_api_error(
+            e,
+            "resolve target",
+            Some("Hook not found or you do not have access."),
+        ),
+    }
+}
+
+fn exit_target_not_found(target_name: &str, hook_slug: &str) -> ! {
+    output::error(format!(
+        "Target '{target_name}' not found for hook '{hook_slug}'."
+    ));
+    output::warning(format!(
+        "Run {} to see available targets.",
+        output::command(format!("tofu targets list --hook {hook_slug}"))
+    ));
+    std::process::exit(1);
+}
+
 fn exit_no_active_workspace() -> ! {
     output::error("No active workspace set.");
     output::warning(format!(

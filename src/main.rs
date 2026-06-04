@@ -4,8 +4,10 @@ use clap::Parser;
 use crate::{
     api::ApiClient,
     commands::{
-        Cli, Commands, ConfigCommands, HooksCommands, MembersCommands, WorkspaceCommands, auth,
-        cli_config, health, hooks, usage, workspaces,
+        Cli, Commands, ConfigCommands, HooksCommands, MembersCommands, TargetsCommand,
+        WorkspaceCommands, auth, cli_config, health, hooks,
+        targets::{self, TargetStatus},
+        usage, workspaces,
     },
     config::Config,
 };
@@ -65,6 +67,15 @@ async fn main() {
             }
             HooksCommands::Url { slug } => hooks::url(&client, slug, cli.json).await,
             HooksCommands::Status { slug } => hooks::status(&client, slug, cli.json).await,
+        },
+        Commands::Targets { command } => match command {
+            TargetsCommand::List { hook } => targets::list(&client, hook, cli.json).await,
+            TargetsCommand::Enable { name, hook } => {
+                targets::toggle(TargetStatus::On, &client, name, hook, cli.json).await
+            }
+            TargetsCommand::Disable { name, hook } => {
+                targets::toggle(TargetStatus::Off, &client, name, hook, cli.json).await
+            }
         },
     }
 }

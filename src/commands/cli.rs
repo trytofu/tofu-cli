@@ -51,6 +51,32 @@ pub enum Commands {
         #[command(subcommand)]
         command: HooksCommands,
     },
+    /// Manage targets
+    Targets {
+        #[command(subcommand)]
+        command: TargetsCommand,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum TargetsCommand {
+    /// List targets for a hook
+    List {
+        #[arg(long, help = "hook slug")]
+        hook: String,
+    },
+    /// Enable a target
+    Enable {
+        name: String,
+        #[arg(long, help = "Hook slug")]
+        hook: String,
+    },
+    /// Disable a target
+    Disable {
+        name: String,
+        #[arg(long, help = "Hook slug")]
+        hook: String,
+    },
 }
 
 #[derive(Subcommand)]

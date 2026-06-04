@@ -133,7 +133,7 @@ impl ApiClient {
         &self,
         url: &str,
         token: &str,
-        body: &Value,
+        body: Option<&Value>,
     ) -> Result<Response, ApiError> {
         let response = self
             .client
@@ -227,7 +227,7 @@ impl ApiClient {
         let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
         let url = format!("{}/api/workspaces", self.base_url);
         let body = serde_json::json!({ "name": name, "slug": slug });
-        let response = self.post_authenticated_response(&url, token, &body).await?;
+        let response = self.post_authenticated_response(&url, token, Some(&body)).await?;
 
         response
             .json::<Workspace>()
@@ -251,7 +251,7 @@ impl ApiClient {
         let url = format!("{}/api/workspaces/{workspace_id}/members", self.base_url);
 
         let body = serde_json::json!({ "email": email, "role": "member" });
-        self.post_authenticated_response(&url, token, &body).await?;
+        self.post_authenticated_response(&url, token, Some(&body)).await?;
 
         Ok(())
     }
@@ -280,7 +280,7 @@ impl ApiClient {
         let url = format!("{}/api/workspaces/{workspace_id}/hooks", self.base_url);
         let body = serde_json::json!({ "name": name, "slug": slug });
 
-        let response = self.post_authenticated_response(&url, token, &body).await?;
+        let response = self.post_authenticated_response(&url, token, Some(&body)).await?;
         response.json::<Hook>().await.map_err(ApiError::Request)
     }
 
@@ -301,5 +301,21 @@ impl ApiClient {
         let url = format!("{}/api/hooks/{hook_id}/targets", self.base_url);
         let r = self.get_authenticated_response(&url, token).await?;
         r.json::<Vec<Target>>().await.map_err(ApiError::Request)
+    }
+
+    pub async fn disable_target(&self, target_id: &str) -> Result<Target, ApiError> {
+        let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
+        let url = format!("{}/api/targets/{target_id}/disable", self.base_url);
+
+        let r = self.post_authenticated_response(&url, token, None).await?;
+        r.json::<Target>().await.map_err(ApiError::Request)
+    }
+
+    pub async fn enable_target(&self, target_id: &str) -> Result<Target, ApiError> {
+        let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
+        let url = format!("{}/api/targets/{target_id}/enable", self.base_url);
+
+        let r = self.post_authenticated_response(&url, token, None).await?;
+        r.json::<Target>().await.map_err(ApiError::Request)
     }
 }

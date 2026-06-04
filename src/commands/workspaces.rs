@@ -2,6 +2,7 @@ use crate::{
     api::ApiClient,
     models::api_error::ApiError,
     utils::{
+        api_errors::exit_api_error,
         output::{self, print_plan_limit_error},
         strings::slugify_workspace_slug,
         time::fmt_time,
@@ -39,50 +40,14 @@ pub async fn list(client: &ApiClient, json: bool) {
                 println!("{t}");
             }
         }
-        Err(ApiError::NotAuthenticated) => {
-            output::error("Not authenticated.");
-            output::warning(format!("Run {}.", output::command("tofu login")));
-            std::process::exit(1);
-        }
-        Err(ApiError::UnexpectedStatus { status })
-            if status == reqwest::StatusCode::UNAUTHORIZED =>
-        {
-            output::error("Invalid token.");
-            output::warning(format!(
-                "Run {} to re-authenticate.",
-                output::command("tofu login")
-            ));
-            std::process::exit(1);
-        }
-        Err(e) => {
-            output::error(format!("Failed to list workspaces: {e}"));
-            std::process::exit(1);
-        }
+        Err(e) => exit_api_error(e, "list workspaces", None),
     }
 }
 
 pub async fn cli_use(client: &ApiClient, slug: String, json: bool) {
     let workspaces = match client.list_workspaces().await {
         Ok(w) => w,
-        Err(ApiError::NotAuthenticated) => {
-            output::error("Not authenticated.");
-            output::warning(format!("Run {}.", output::command("tofu login")));
-            std::process::exit(1);
-        }
-        Err(ApiError::UnexpectedStatus { status })
-            if status == reqwest::StatusCode::UNAUTHORIZED =>
-        {
-            output::error("Invalid token.");
-            output::warning(format!(
-                "Run {} to re-authenticate.",
-                output::command("tofu login")
-            ));
-            std::process::exit(1);
-        }
-        Err(e) => {
-            output::error(format!("Failed to list workspaces: {e}"));
-            std::process::exit(1);
-        }
+        Err(e) => exit_api_error(e, "list workspaces", None),
     };
 
     let normalised_slug = slugify_workspace_slug(&slug);
@@ -102,8 +67,11 @@ pub async fn cli_use(client: &ApiClient, slug: String, json: bool) {
 
     let active_slug = workspace.slug.clone();
     if let Err(e) = client.set_active_workspace(&workspace.id).await {
-        output::error(format!("Failed to set active workspace: {e}"));
-        std::process::exit(1);
+        exit_api_error(
+            e,
+            "set active workspace",
+            Some("Workspace not found or you do not have access."),
+        );
     }
 
     if json {
@@ -148,29 +116,11 @@ pub async fn create(client: &ApiClient, slug: String, name: Option<String>, json
                 ));
             }
         }
-        Err(ApiError::NotAuthenticated) => {
-            output::error("Not authenticated.");
-            output::warning(format!("Run {}.", output::command("tofu login")));
-            std::process::exit(1);
-        }
-        Err(ApiError::UnexpectedStatus { status })
-            if status == reqwest::StatusCode::UNAUTHORIZED =>
-        {
-            output::error("Invalid token.");
-            output::warning(format!(
-                "Run {} to re-authenticate.",
-                output::command("tofu login")
-            ));
-            std::process::exit(1);
-        }
         Err(ApiError::UnexpectedStatus { status }) if status == reqwest::StatusCode::CONFLICT => {
             output::error("Workspace slug already exists.");
             std::process::exit(1);
         }
-        Err(e) => {
-            output::error(format!("Failed to create workspace: {e}"));
-            std::process::exit(1);
-        }
+        Err(e) => exit_api_error(e, "create workspace", None),
     }
 }
 
@@ -202,24 +152,11 @@ pub async fn members_list(client: &ApiClient, json: bool) {
                 println!("{t}");
             }
         }
-        Err(ApiError::NotAuthenticated) => {
-            eprintln!("Not authenticated. Run `tofu login`");
-            std::process::exit(1);
-        }
-        Err(ApiError::UnexpectedStatus { status })
-            if status == reqwest::StatusCode::UNAUTHORIZED =>
-        {
-            eprintln!("Invalid token. Run `tofu login` to re-authenticate.");
-            std::process::exit(1);
-        }
-        Err(ApiError::UnexpectedStatus { status }) if status == reqwest::StatusCode::NOT_FOUND => {
-            eprintln!("Workspace not found or you do not have access.");
-            std::process::exit(1);
-        }
-        Err(e) => {
-            eprintln!("Failed to list members: {e}");
-            std::process::exit(1);
-        }
+        Err(e) => exit_api_error(
+            e,
+            "list members",
+            Some("Workspace not found or you do not have access."),
+        ),
     }
 }
 
@@ -240,31 +177,18 @@ pub async fn members_add(client: &ApiClient, email: String, json: bool) {
                 output::success(format!("Added member: {email}"));
             }
         }
-        Err(ApiError::NotAuthenticated) => {
-            eprintln!("Not authenticated. Run `tofu login`");
-            std::process::exit(1);
-        }
-        Err(ApiError::UnexpectedStatus { status })
-            if status == reqwest::StatusCode::UNAUTHORIZED =>
-        {
-            eprintln!("Invalid token. Run `tofu login` to re-authenticate.");
-            std::process::exit(1);
-        }
-        Err(ApiError::UnexpectedStatus { status }) if status == reqwest::StatusCode::NOT_FOUND => {
-            eprintln!("Workspace not found or user does not exist.");
-            std::process::exit(1);
-        }
         Err(ApiError::UnexpectedStatus { status }) if status == reqwest::StatusCode::CONFLICT => {
-            eprintln!("User is already a member of this workspace.");
+            output::error("User is already a member of this workspace.");
             std::process::exit(1);
         }
         Err(ApiError::PlanLimitReached(err)) => {
             print_plan_limit_error(&err);
             std::process::exit(1);
         }
-        Err(e) => {
-            eprintln!("Failed to add member: {e}");
-            std::process::exit(1);
-        }
+        Err(e) => exit_api_error(
+            e,
+            "add member",
+            Some("Workspace not found or user does not exist."),
+        ),
     }
 }
