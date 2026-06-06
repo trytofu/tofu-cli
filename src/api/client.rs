@@ -6,6 +6,7 @@ use crate::{
     models::{
         api_error::ApiError,
         billing_status::BillingStatus,
+        events::{EventDetail, EventListItem},
         health_status::HealthStatus,
         hook::Hook,
         member::Member,
@@ -151,10 +152,7 @@ impl ApiClient {
         } else {
             request
         };
-        let response = request
-            .send()
-            .await
-            .map_err(ApiError::Request)?;
+        let response = request.send().await.map_err(ApiError::Request)?;
 
         let status = response.status();
 
@@ -184,10 +182,7 @@ impl ApiClient {
         } else {
             request
         };
-        let response = request
-            .send()
-            .await
-            .map_err(ApiError::Request)?;
+        let response = request.send().await.map_err(ApiError::Request)?;
 
         let status = response.status();
 
@@ -442,5 +437,30 @@ impl ApiClient {
             .patch_authenticated_response(&url_path, token, Some(&body.into()))
             .await?;
         r.json::<Target>().await.map_err(ApiError::Request)
+    }
+}
+
+// Events
+impl ApiClient {
+    pub async fn list_events(
+        &self,
+        hook_id: &str,
+        limit: u32,
+    ) -> Result<Vec<EventListItem>, ApiError> {
+        let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
+        let url = format!("{}/api/hooks/{hook_id}/events?limit={limit}", self.base_url);
+
+        let r = self.get_authenticated_response(&url, token).await?;
+        r.json::<Vec<EventListItem>>()
+            .await
+            .map_err(ApiError::Request)
+    }
+
+    pub async fn get_event(&self, event_id: &str) -> Result<EventDetail, ApiError> {
+        let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
+        let url = format!("{}/api/events/{event_id}", self.base_url);
+
+        let r = self.get_authenticated_response(&url, token).await?;
+        r.json().await.map_err(ApiError::Request)
     }
 }

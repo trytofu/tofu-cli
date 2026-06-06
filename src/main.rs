@@ -4,8 +4,8 @@ use clap::Parser;
 use crate::{
     api::ApiClient,
     commands::{
-        Cli, Commands, ConfigCommands, HooksCommands, MembersCommands, TargetsCommand,
-        WorkspaceCommands, auth, cli_config, health, hooks,
+        Cli, Commands, ConfigCommands, EventsCommands, HooksCommands, MembersCommands,
+        TargetsCommand, WorkspaceCommands, auth, cli_config, events, health, hooks,
         targets::{self, TargetStatus},
         usage, workspaces,
     },
@@ -84,6 +84,16 @@ async fn main() {
             }
             TargetsCommand::Delete { name, hook } => {
                 targets::delete(&client, name, hook, cli.json).await
+            }
+        },
+        Commands::Events { command } => match command {
+            EventsCommands::List { hook, limit } => {
+                events::list(&client, hook, limit, cli.json).await
+            }
+            EventsCommands::Show { event_id } => events::show(&client, event_id, cli.json).await,
+            EventsCommands::Latest { hook } => events::latest(&client, hook, cli.json).await,
+            EventsCommands::Expire { event_id } => {
+                events::expire(&client, event_id, cli.json).await
             }
         },
     }

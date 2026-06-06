@@ -56,6 +56,31 @@ pub enum Commands {
         #[command(subcommand)]
         command: TargetsCommand,
     },
+    /// Inspect events
+    Events {
+        #[command(subcommand)]
+        command: EventsCommands,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum EventsCommands {
+    /// List events for a hook
+    List {
+        #[arg(long, help = "Hook slug")]
+        hook: String,
+        #[arg(long, help = "Number of events to show", default_value_t = 20, value_parser = clap::value_parser!(u32).range(1..=100))]
+        limit: u32,
+    },
+    /// Show event details
+    Show { event_id: String },
+    /// Permanently remove stored request payload data for an event
+    Expire { event_id: String },
+    /// Show the latest event for a hook
+    Latest {
+        #[arg(long, help = "Hook slug")]
+        hook: String,
+    },
 }
 
 #[derive(Subcommand)]
