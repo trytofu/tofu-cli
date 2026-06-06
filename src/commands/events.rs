@@ -64,7 +64,7 @@ pub async fn show(client: &ApiClient, event_id: String, json: bool) {
         Err(e) => exit_api_error(
             e,
             "fetch event",
-            Some("Event not found or you do not have access"),
+            Some("Event not found or you do not have access."),
         ),
     }
 }

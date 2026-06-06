@@ -6,7 +6,7 @@ pub async fn run(api: &ApiClient, json: bool) {
             if json {
                 println!("{{\"status\":\"ok\"}}");
             } else {
-                output::success("Api is health");
+                output::success("Tofu is ready.");
             }
         }
         Ok(HealthStatus::NotOk(status)) => {

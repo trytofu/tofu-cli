@@ -1,31 +1,13 @@
 use crate::{
     api::ApiClient,
-    models::{
-        api_error::ApiError,
-        billing_status::{BillingLimits, BillingStatus, BillingUsage},
-    },
-    utils::{output, time::fmt_time},
+    models::billing_status::{BillingLimits, BillingStatus, BillingUsage},
+    utils::{api_errors::exit_api_error, output, time::fmt_time},
 };
 
 pub async fn run(client: &ApiClient, json: bool) {
     match client.billing_status().await {
         Ok(s) => print_usage(s, json),
-        Err(ApiError::NotAuthenticated) => {
-            output::error("Not authenticated.");
-            output::warning(format!("Run {}.", output::command("tofu login")));
-            std::process::exit(1);
-        }
-        Err(ApiError::UnexpectedStatus { status })
-            if status == reqwest::StatusCode::UNAUTHORIZED =>
-        {
-            output::error("Invalid token.");
-            output::warning(format!("Run {}.", output::command("tofu login")));
-            std::process::exit(1);
-        }
-        Err(e) => {
-            output::error(format!("Failed to fetch usage: {e}"));
-            std::process::exit(1);
-        }
+        Err(e) => exit_api_error(e, "fetch usage", None),
     }
 }
 

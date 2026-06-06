@@ -172,7 +172,7 @@ pub async fn add(client: &ApiClient, name: String, url: String, hook_slug: Strin
             print_plan_limit_error(&err);
             std::process::exit(1);
         }
-        Err(e) => exit_api_error(e, "create a target", None),
+        Err(e) => exit_api_error(e, "create target", None),
     }
 }
 

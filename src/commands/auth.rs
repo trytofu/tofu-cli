@@ -7,7 +7,7 @@ use crate::{
         api_error::ApiError,
         user_me::{DeviceLoginStart, UserMe},
     },
-    utils::{os, output, time},
+    utils::{api_errors::exit_api_error, os, output, time},
 };
 
 pub async fn login(
@@ -66,22 +66,7 @@ pub async fn whoami(client: &ApiClient, json: bool) {
                 );
             }
         }
-        Err(ApiError::NotAuthenticated) => {
-            output::error("Not authenticated.");
-            output::warning(format!("Run {}.", output::command("tofu login")));
-            std::process::exit(1);
-        }
-        Err(ApiError::UnexpectedStatus { status })
-            if status == reqwest::StatusCode::UNAUTHORIZED =>
-        {
-            output::error("Invalid token.");
-            output::warning("Run `tofu login` to re-authenticate.");
-            std::process::exit(1);
-        }
-        Err(e) => {
-            output::error(format!("Failed to fetch user: {e}"));
-            std::process::exit(1);
-        }
+        Err(e) => exit_api_error(e, "fetch user", None),
     }
 }
 

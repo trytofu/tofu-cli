@@ -2,7 +2,10 @@ use crate::{
     api::ApiClient,
     models::api_error::ApiError,
     utils::{
-        api_errors::exit_api_error, output::{self, print_plan_limit_error}, time::fmt_time, workspace::{resolve_hook_or_exit, resolve_workspace_id_or_exit}
+        api_errors::exit_api_error,
+        output::{self, print_plan_limit_error},
+        time::fmt_time,
+        workspace::{resolve_hook_or_exit, resolve_workspace_id_or_exit},
     },
 };
 
@@ -79,7 +82,6 @@ pub async fn url(client: &ApiClient, slug: String, json: bool) {
     }
 }
 
-
 pub async fn status(client: &ApiClient, slug: String, json: bool) {
     let hook = resolve_hook_or_exit(client, &slug).await;
 
@@ -92,7 +94,7 @@ pub async fn status(client: &ApiClient, slug: String, json: bool) {
         ),
     };
 
-     if json {
+    if json {
         println!(
             "{}",
             serde_json::json!({
