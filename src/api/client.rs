@@ -4,7 +4,14 @@ use serde_json::Value;
 use crate::{
     api::utils::api_error_from_response,
     models::{
-        api_error::ApiError, billing_status::BillingStatus, health_status::HealthStatus, hook::Hook, member::Member, target::Target, user_me::{DeviceLoginPoll, DeviceLoginStart, UserMe}, workspace::Workspace
+        api_error::ApiError,
+        billing_status::BillingStatus,
+        health_status::HealthStatus,
+        hook::Hook,
+        member::Member,
+        target::Target,
+        user_me::{DeviceLoginPoll, DeviceLoginStart, UserMe},
+        workspace::Workspace,
     },
 };
 
@@ -135,11 +142,16 @@ impl ApiClient {
         token: &str,
         body: Option<&Value>,
     ) -> Result<Response, ApiError> {
-        let response = self
+        let request = self
             .client
             .post(url)
-            .header("Authorization", format!("Bearer {token}"))
-            .json(&body)
+            .header("Authorization", format!("Bearer {token}"));
+        let request = if let Some(body) = body {
+            request.json(body)
+        } else {
+            request
+        };
+        let response = request
             .send()
             .await
             .map_err(ApiError::Request)?;
@@ -155,6 +167,61 @@ impl ApiClient {
         }
 
         Ok(response)
+    }
+
+    async fn patch_authenticated_response(
+        &self,
+        url: &str,
+        token: &str,
+        body: Option<&Value>,
+    ) -> Result<Response, ApiError> {
+        let request = self
+            .client
+            .patch(url)
+            .header("Authorization", format!("Bearer {token}"));
+        let request = if let Some(body) = body {
+            request.json(body)
+        } else {
+            request
+        };
+        let response = request
+            .send()
+            .await
+            .map_err(ApiError::Request)?;
+
+        let status = response.status();
+
+        if status == StatusCode::UNAUTHORIZED {
+            return Err(ApiError::UnexpectedStatus { status });
+        }
+
+        if !status.is_success() {
+            return Err(api_error_from_response(response).await);
+        }
+
+        Ok(response)
+    }
+
+    async fn delete_authenticated_response(&self, url: &str, token: &str) -> Result<(), ApiError> {
+        let response = self
+            .client
+            .delete(url)
+            .header("Authorization", format!("Bearer {token}"))
+            .send()
+            .await
+            .map_err(ApiError::Request)?;
+
+        let status = response.status();
+
+        if status == StatusCode::UNAUTHORIZED {
+            return Err(ApiError::UnexpectedStatus { status });
+        }
+
+        if !status.is_success() {
+            return Err(ApiError::UnexpectedStatus { status });
+        }
+
+        Ok(())
     }
 
     async fn put_authenticated_response(
@@ -227,7 +294,9 @@ impl ApiClient {
         let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
         let url = format!("{}/api/workspaces", self.base_url);
         let body = serde_json::json!({ "name": name, "slug": slug });
-        let response = self.post_authenticated_response(&url, token, Some(&body)).await?;
+        let response = self
+            .post_authenticated_response(&url, token, Some(&body))
+            .await?;
 
         response
             .json::<Workspace>()
@@ -251,7 +320,8 @@ impl ApiClient {
         let url = format!("{}/api/workspaces/{workspace_id}/members", self.base_url);
 
         let body = serde_json::json!({ "email": email, "role": "member" });
-        self.post_authenticated_response(&url, token, Some(&body)).await?;
+        self.post_authenticated_response(&url, token, Some(&body))
+            .await?;
 
         Ok(())
     }
@@ -280,7 +350,9 @@ impl ApiClient {
         let url = format!("{}/api/workspaces/{workspace_id}/hooks", self.base_url);
         let body = serde_json::json!({ "name": name, "slug": slug });
 
-        let response = self.post_authenticated_response(&url, token, Some(&body)).await?;
+        let response = self
+            .post_authenticated_response(&url, token, Some(&body))
+            .await?;
         response.json::<Hook>().await.map_err(ApiError::Request)
     }
 
@@ -316,6 +388,59 @@ impl ApiClient {
         let url = format!("{}/api/targets/{target_id}/enable", self.base_url);
 
         let r = self.post_authenticated_response(&url, token, None).await?;
+        r.json::<Target>().await.map_err(ApiError::Request)
+    }
+
+    pub async fn delete_target(&self, target_id: &str) -> Result<(), ApiError> {
+        let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
+        let url = format!("{}/api/targets/{target_id}", self.base_url);
+        self.delete_authenticated_response(&url, token).await
+    }
+
+    pub async fn create_target(
+        &self,
+        hook_id: &str,
+        name: String,
+        url: String,
+        enabled: bool,
+    ) -> Result<Target, ApiError> {
+        let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
+        let body = serde_json::json!({ "name": name, "url": url, "enabled": enabled });
+
+        let r = self
+            .post_authenticated_response(
+                &format!("{}/api/hooks/{hook_id}/targets", self.base_url),
+                token,
+                Some(&body),
+            )
+            .await?;
+        r.json::<Target>().await.map_err(ApiError::Request)
+    }
+
+    pub async fn update_target(
+        &self,
+        target_id: &str,
+        name: Option<String>,
+        url: Option<String>,
+        enabled: Option<bool>,
+    ) -> Result<Target, ApiError> {
+        let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
+        let url_path = format!("{}/api/targets/{target_id}", self.base_url);
+
+        let mut body = serde_json::Map::new();
+        if let Some(n) = name {
+            body.insert("name".to_string(), serde_json::Value::String(n));
+        }
+        if let Some(u) = url {
+            body.insert("url".to_string(), serde_json::Value::String(u));
+        }
+        if let Some(e) = enabled {
+            body.insert("enabled".to_string(), serde_json::Value::Bool(e));
+        }
+
+        let r = self
+            .patch_authenticated_response(&url_path, token, Some(&body.into()))
+            .await?;
         r.json::<Target>().await.map_err(ApiError::Request)
     }
 }

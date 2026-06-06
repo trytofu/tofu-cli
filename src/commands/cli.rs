@@ -60,6 +60,20 @@ pub enum Commands {
 
 #[derive(Subcommand)]
 pub enum TargetsCommand {
+    /// Add a new target
+    Add {
+        name: String,
+        url: String,
+        #[arg(long, help = "Hook slug")]
+        hook: String,
+    },
+    /// Create or Update a target
+    Set {
+        name: String,
+        url: String,
+        #[arg(long, help = "Hook slug")]
+        hook: String,
+    },
     /// List targets for a hook
     List {
         #[arg(long, help = "hook slug")]
@@ -73,6 +87,12 @@ pub enum TargetsCommand {
     },
     /// Disable a target
     Disable {
+        name: String,
+        #[arg(long, help = "Hook slug")]
+        hook: String,
+    },
+    /// Delete a target
+    Delete {
         name: String,
         #[arg(long, help = "Hook slug")]
         hook: String,

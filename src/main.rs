@@ -69,12 +69,21 @@ async fn main() {
             HooksCommands::Status { slug } => hooks::status(&client, slug, cli.json).await,
         },
         Commands::Targets { command } => match command {
+            TargetsCommand::Add { name, url, hook } => {
+                targets::add(&client, name, url, hook, cli.json).await
+            }
+            TargetsCommand::Set { name, url, hook } => {
+                targets::set(&client, name, url, hook, cli.json).await
+            }
             TargetsCommand::List { hook } => targets::list(&client, hook, cli.json).await,
             TargetsCommand::Enable { name, hook } => {
                 targets::toggle(TargetStatus::On, &client, name, hook, cli.json).await
             }
             TargetsCommand::Disable { name, hook } => {
                 targets::toggle(TargetStatus::Off, &client, name, hook, cli.json).await
+            }
+            TargetsCommand::Delete { name, hook } => {
+                targets::delete(&client, name, hook, cli.json).await
             }
         },
     }
