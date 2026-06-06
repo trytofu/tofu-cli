@@ -463,4 +463,12 @@ impl ApiClient {
         let r = self.get_authenticated_response(&url, token).await?;
         r.json().await.map_err(ApiError::Request)
     }
+
+    pub async fn expire_event(&self, event_id: &str) -> Result<EventDetail, ApiError> {
+        let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
+        let url = format!("{}/api/events/{event_id}/expire", self.base_url);
+
+        let r = self.post_authenticated_response(&url, token, None).await?;
+        r.json().await.map_err(ApiError::Request)
+    }
 }

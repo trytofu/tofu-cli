@@ -100,13 +100,53 @@ pub async fn latest(client: &ApiClient, hook_slug: String, json: bool) {
     }
 }
 
-pub async fn expire(_client: &ApiClient, _event_id: String, _json: bool) {
-    exit_not_implemented("events expire");
-}
+pub async fn expire(client: &ApiClient, event_id: String, json: bool) {
+    let event = match client.get_event(&event_id).await {
+        Ok(event) => event,
+        Err(e) => exit_api_error(
+            e,
+            "fetch event",
+            Some("Event not found or you do not have access."),
+        ),
+    };
 
-fn exit_not_implemented(command: &str) -> ! {
-    output::error(format!("{command} is not implemented yet."));
-    std::process::exit(1);
+    if event.payload_expired {
+        if json {
+            println!(
+                "{}",
+                serde_json::json!({
+                    "status": "ok",
+                    "already_expired": true,
+                    "event": event,
+                })
+            );
+        } else {
+            output::empty(format!("Event payload was already expired: {event_id}"));
+        }
+        return;
+    }
+
+    match client.expire_event(&event_id).await {
+        Ok(event) => {
+            if json {
+                println!(
+                    "{}",
+                    serde_json::json!({
+                        "status": "ok",
+                        "already_expired": false,
+                        "event": event,
+                    })
+                );
+            } else {
+                output::success(format!("Expired event payload: {event_id}"));
+            }
+        }
+        Err(e) => exit_api_error(
+            e,
+            "expire event",
+            Some("Event not found or you do not have access."),
+        ),
+    }
 }
 
 // helpers
