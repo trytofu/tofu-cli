@@ -1,8 +1,8 @@
-use std::{fs, process::Command};
+use std::fs;
 
 mod support;
 
-use support::{temp_home, write_config};
+use support::{temp_home, tofu_command, write_config};
 
 #[test]
 fn config_show_json_redacts_saved_token() {
@@ -12,8 +12,7 @@ fn config_show_json_redacts_saved_token() {
         "api_base_url = \"http://127.0.0.1:4321\"\ntoken = \"tofu_pat_secret\"\n",
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
-        .env("HOME", &home)
+    let output = tofu_command(&home)
         .args(["--json", "config", "show"])
         .output()
         .expect("run tofu-cli config show");
@@ -41,8 +40,7 @@ fn config_show_table_redacts_saved_token() {
         "api_base_url = \"http://127.0.0.1:4321\"\ntoken = \"tofu_pat_secret\"\n",
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
-        .env("HOME", &home)
+    let output = tofu_command(&home)
         .args(["config", "show"])
         .output()
         .expect("run tofu-cli config show");

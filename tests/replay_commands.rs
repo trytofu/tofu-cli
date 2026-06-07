@@ -1,8 +1,8 @@
-use std::{fs, process::Command};
+use std::fs;
 
 mod support;
 
-use support::{MockServer, ok_json, temp_home, write_config};
+use support::{MockServer, ok_json, temp_home, tofu_command, write_config};
 
 fn user_with_active_workspace() -> &'static str {
     r#"{
@@ -102,8 +102,7 @@ fn replay_latest_resolves_hook_and_posts_event_replay() {
         &format!("api_base_url = \"{base_url}\"\ntoken = \"tofu_pat_saved\"\n"),
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
-        .env("HOME", &home)
+    let output = tofu_command(&home)
         .args(["--json", "replay", "latest", "--hook", "stripe"])
         .output()
         .expect("run tofu-cli replay latest");
@@ -150,8 +149,7 @@ fn replay_event_to_target_fetches_event_then_resolves_target() {
         &format!("api_base_url = \"{base_url}\"\ntoken = \"tofu_pat_saved\"\n"),
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
-        .env("HOME", &home)
+    let output = tofu_command(&home)
         .args(["--json", "replay", "event_1", "--target", "dev"])
         .output()
         .expect("run tofu-cli replay target");

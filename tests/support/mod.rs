@@ -4,7 +4,8 @@ use std::{
     fs,
     io::{Read, Write},
     net::{TcpListener, TcpStream},
-    path::PathBuf,
+    path::{Path, PathBuf},
+    process::Command,
     sync::{
         Arc, Mutex,
         atomic::{AtomicUsize, Ordering},
@@ -98,11 +99,17 @@ pub fn temp_home(test_name: &str) -> PathBuf {
     path
 }
 
-pub fn config_contents(home: &PathBuf) -> String {
+pub fn tofu_command(home: &Path) -> Command {
+    let mut command = Command::new(env!("CARGO_BIN_EXE_tofu"));
+    command.env("HOME", home).env("USERPROFILE", home);
+    command
+}
+
+pub fn config_contents(home: &Path) -> String {
     fs::read_to_string(home.join(".config/tofu/config.toml")).expect("read config")
 }
 
-pub fn write_config(home: &PathBuf, contents: &str) {
+pub fn write_config(home: &Path, contents: &str) {
     let config_path = home.join(".config/tofu/config.toml");
     fs::create_dir_all(config_path.parent().expect("config parent")).expect("create config parent");
     fs::write(config_path, contents).expect("write config");

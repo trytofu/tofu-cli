@@ -1,8 +1,8 @@
-use std::{fs, process::Command};
+use std::fs;
 
 mod support;
 
-use support::{MockServer, ok_json, temp_home, write_config};
+use support::{MockServer, ok_json, temp_home, tofu_command, write_config};
 
 fn user_with_active_workspace() -> &'static str {
     r#"{
@@ -67,8 +67,7 @@ fn targets_list_uses_active_workspace_and_hook_slug() {
         &format!("api_base_url = \"{base_url}\"\ntoken = \"tofu_pat_saved\"\n"),
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
-        .env("HOME", &home)
+    let output = tofu_command(&home)
         .args(["--json", "targets", "list", "--hook", "stripe"])
         .output()
         .expect("run tofu-cli targets list");
@@ -123,8 +122,7 @@ fn targets_disable_resolves_target_id_before_toggling() {
         &format!("api_base_url = \"{base_url}\"\ntoken = \"tofu_pat_saved\"\n"),
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
-        .env("HOME", &home)
+    let output = tofu_command(&home)
         .args(["--json", "targets", "disable", "dev", "--hook", "stripe"])
         .output()
         .expect("run tofu-cli targets disable");
@@ -176,8 +174,7 @@ fn targets_disable_reports_missing_target_without_toggling() {
         &format!("api_base_url = \"{base_url}\"\ntoken = \"tofu_pat_saved\"\n"),
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
-        .env("HOME", &home)
+    let output = tofu_command(&home)
         .args(["targets", "disable", "dev", "--hook", "stripe"])
         .output()
         .expect("run tofu-cli targets disable");

@@ -1,8 +1,8 @@
-use std::{fs, process::Command};
+use std::fs;
 
 mod support;
 
-use support::{MockServer, ok_json, temp_home, write_config};
+use support::{MockServer, ok_json, temp_home, tofu_command, write_config};
 
 #[test]
 fn workspaces_list_json_uses_saved_token() {
@@ -32,8 +32,7 @@ fn workspaces_list_json_uses_saved_token() {
         &format!("api_base_url = \"{base_url}\"\ntoken = \"tofu_pat_saved\"\n"),
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
-        .env("HOME", &home)
+    let output = tofu_command(&home)
         .args(["--json", "workspaces", "list"])
         .output()
         .expect("run tofu-cli workspaces list");
@@ -80,8 +79,7 @@ fn workspaces_create_posts_normalized_slug_and_prints_json() {
         &format!("api_base_url = \"{base_url}\"\ntoken = \"tofu_pat_saved\"\n"),
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
-        .env("HOME", &home)
+    let output = tofu_command(&home)
         .args([
             "--json",
             "workspaces",
@@ -149,8 +147,7 @@ fn workspaces_use_sets_active_workspace_by_normalized_slug() {
         &format!("api_base_url = \"{base_url}\"\ntoken = \"tofu_pat_saved\"\n"),
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
-        .env("HOME", &home)
+    let output = tofu_command(&home)
         .args(["--json", "workspaces", "use", "Acme   Dev"])
         .output()
         .expect("run tofu-cli workspaces use");
@@ -206,8 +203,7 @@ fn workspace_members_list_uses_active_workspace() {
         &format!("api_base_url = \"{base_url}\"\ntoken = \"tofu_pat_saved\"\n"),
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
-        .env("HOME", &home)
+    let output = tofu_command(&home)
         .args(["--json", "workspaces", "members", "list"])
         .output()
         .expect("run tofu-cli workspaces members list");
@@ -256,8 +252,7 @@ fn workspace_members_add_uses_active_workspace() {
         &format!("api_base_url = \"{base_url}\"\ntoken = \"tofu_pat_saved\"\n"),
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
-        .env("HOME", &home)
+    let output = tofu_command(&home)
         .args([
             "--json",
             "workspaces",
@@ -318,8 +313,7 @@ fn workspace_members_add_requires_active_workspace() {
         &format!("api_base_url = \"{base_url}\"\ntoken = \"tofu_pat_saved\"\n"),
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
-        .env("HOME", &home)
+    let output = tofu_command(&home)
         .args(["workspaces", "members", "add", "teammate@example.com"])
         .output()
         .expect("run tofu-cli workspaces members add");
