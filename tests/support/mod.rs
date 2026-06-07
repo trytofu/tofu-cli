@@ -101,18 +101,25 @@ pub fn temp_home(test_name: &str) -> PathBuf {
 
 pub fn tofu_command(home: &Path) -> Command {
     let mut command = Command::new(env!("CARGO_BIN_EXE_tofu"));
-    command.env("HOME", home).env("USERPROFILE", home);
+    command
+        .env("HOME", home)
+        .env("USERPROFILE", home)
+        .env("TOFU_CONFIG_PATH", config_path(home));
     command
 }
 
 pub fn config_contents(home: &Path) -> String {
-    fs::read_to_string(home.join(".config/tofu/config.toml")).expect("read config")
+    fs::read_to_string(config_path(home)).expect("read config")
 }
 
 pub fn write_config(home: &Path, contents: &str) {
-    let config_path = home.join(".config/tofu/config.toml");
+    let config_path = config_path(home);
     fs::create_dir_all(config_path.parent().expect("config parent")).expect("create config parent");
     fs::write(config_path, contents).expect("write config");
+}
+
+fn config_path(home: &Path) -> PathBuf {
+    home.join(".config").join("tofu").join("config.toml")
 }
 
 fn read_request(stream: &mut TcpStream) -> RecordedRequest {

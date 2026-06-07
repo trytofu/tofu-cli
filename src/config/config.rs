@@ -26,7 +26,11 @@ impl Config {
     }
 
     pub fn path() -> Option<PathBuf> {
-        dirs::home_dir().map(|p| p.join(".config").join("tofu").join("config.toml"))
+        std::env::var_os("TOFU_CONFIG_PATH")
+            .map(PathBuf::from)
+            .or_else(|| {
+                dirs::home_dir().map(|p| p.join(".config").join("tofu").join("config.toml"))
+            })
     }
 
     pub fn save(&self) -> Result<(), std::io::Error> {
