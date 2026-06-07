@@ -1,8 +1,8 @@
 pub fn open_browser(url: &str) -> std::io::Result<()> {
+    use std::process::Command;
+
     #[cfg(target_os = "macos")]
     {
-        use std::process::Command;
-
         Command::new("open").arg(url).status()?;
     }
 
