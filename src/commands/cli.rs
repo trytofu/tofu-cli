@@ -61,6 +61,15 @@ pub enum Commands {
         #[command(subcommand)]
         command: EventsCommands,
     },
+    /// Replay an event
+    Replay {
+        /// Event ID or "latest" to replay the most recent event
+        event: String,
+        #[arg(long, help = "Hook slug (required when event is 'latest')")]
+        hook: Option<String>,
+        #[arg(long, help = "Target name to replay to")]
+        target: Option<String>,
+    },
 }
 
 #[derive(Subcommand)]

@@ -5,7 +5,7 @@ use crate::{
     api::ApiClient,
     commands::{
         Cli, Commands, ConfigCommands, EventsCommands, HooksCommands, MembersCommands,
-        TargetsCommand, WorkspaceCommands, auth, cli_config, events, health, hooks,
+        TargetsCommand, WorkspaceCommands, auth, cli_config, events, health, hooks, replay,
         targets::{self, TargetStatus},
         usage, workspaces,
     },
@@ -96,5 +96,10 @@ async fn main() {
                 events::expire(&client, event_id, cli.json).await
             }
         },
+        Commands::Replay {
+            event,
+            hook,
+            target,
+        } => replay::run(&client, event, hook, target, cli.json).await,
     }
 }

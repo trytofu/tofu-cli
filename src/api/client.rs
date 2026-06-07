@@ -7,7 +7,7 @@ use crate::{
         api_error::ApiError,
         billing_status::BillingStatus,
         events::{EventDetail, EventListItem},
-        health_status::HealthStatus,
+        health_status::HealthStatus::{self},
         hook::Hook,
         member::Member,
         target::Target,
@@ -470,5 +470,26 @@ impl ApiClient {
 
         let r = self.post_authenticated_response(&url, token, None).await?;
         r.json().await.map_err(ApiError::Request)
+    }
+}
+
+// Replay
+impl ApiClient {
+    pub async fn replay_event_to_target(
+        &self,
+        event_id: &str,
+        target_id: &str,
+    ) -> Result<(), ApiError> {
+        let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
+        let url = format!("{}/api/events/{event_id}/replay/{target_id}", self.base_url);
+        self.post_authenticated_response(&url, token, None).await?;
+        Ok(())
+    }
+
+    pub async fn replay_event(&self, event_id: &str) -> Result<(), ApiError> {
+        let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
+        let url = format!("{}/api/events/{event_id}/replay", self.base_url);
+        self.post_authenticated_response(&url, token, None).await?;
+        Ok(())
     }
 }
