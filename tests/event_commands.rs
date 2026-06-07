@@ -106,7 +106,7 @@ fn events_list_uses_active_workspace_hook_and_limit() {
         &format!("api_base_url = \"{base_url}\"\ntoken = \"tofu_pat_saved\"\n"),
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu-cli"))
+    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
         .env("HOME", &home)
         .args([
             "--json", "events", "list", "--hook", "stripe", "--limit", "5",
@@ -159,7 +159,7 @@ fn events_show_fetches_event_detail() {
         &format!("api_base_url = \"{base_url}\"\ntoken = \"tofu_pat_saved\"\n"),
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu-cli"))
+    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
         .env("HOME", &home)
         .args(["--json", "events", "show", "event_1"])
         .output()
@@ -202,7 +202,7 @@ fn events_latest_lists_one_then_fetches_event_detail() {
         &format!("api_base_url = \"{base_url}\"\ntoken = \"tofu_pat_saved\"\n"),
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu-cli"))
+    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
         .env("HOME", &home)
         .args(["--json", "events", "latest", "--hook", "stripe"])
         .output()
@@ -250,7 +250,7 @@ fn events_latest_prints_null_when_no_events_exist() {
         &format!("api_base_url = \"{base_url}\"\ntoken = \"tofu_pat_saved\"\n"),
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu-cli"))
+    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
         .env("HOME", &home)
         .args(["--json", "events", "latest", "--hook", "stripe"])
         .output()
@@ -286,7 +286,7 @@ fn events_expire_fetches_then_expires_event_payload() {
         &format!("api_base_url = \"{base_url}\"\ntoken = \"tofu_pat_saved\"\n"),
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu-cli"))
+    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
         .env("HOME", &home)
         .args(["--json", "events", "expire", "event_1"])
         .output()
@@ -335,7 +335,7 @@ fn events_expire_skips_expire_call_when_payload_already_expired() {
         &format!("api_base_url = \"{base_url}\"\ntoken = \"tofu_pat_saved\"\n"),
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu-cli"))
+    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
         .env("HOME", &home)
         .args(["--json", "events", "expire", "event_1"])
         .output()

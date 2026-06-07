@@ -12,7 +12,7 @@ fn config_show_json_redacts_saved_token() {
         "api_base_url = \"http://127.0.0.1:4321\"\ntoken = \"tofu_pat_secret\"\n",
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu-cli"))
+    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
         .env("HOME", &home)
         .args(["--json", "config", "show"])
         .output()
@@ -41,7 +41,7 @@ fn config_show_table_redacts_saved_token() {
         "api_base_url = \"http://127.0.0.1:4321\"\ntoken = \"tofu_pat_secret\"\n",
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu-cli"))
+    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
         .env("HOME", &home)
         .args(["config", "show"])
         .output()

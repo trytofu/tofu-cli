@@ -10,13 +10,11 @@ A terminal-first webhook relay for local development. Give webhook providers one
 curl -fsSL https://trytofu.dev/install | sh
 ```
 
-## Where's the source?
+## Homebrew
 
-The CLI source is not public yet.
-
-At the moment the CLI is still coupled to the Tofu backend through shared internal crates. I need to split that apart before publishing it, otherwise the open source repo would be messy and full of backend only bits.
-
-The CLI is intended to be open sourced once that separation is done. For now, this repository is here for installation notes, usage examples, issues, and project status.
+```bash
+brew install trytofu/tap/tofu
+```
 
 ## Quick start
 

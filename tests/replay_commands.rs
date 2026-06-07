@@ -102,7 +102,7 @@ fn replay_latest_resolves_hook_and_posts_event_replay() {
         &format!("api_base_url = \"{base_url}\"\ntoken = \"tofu_pat_saved\"\n"),
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu-cli"))
+    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
         .env("HOME", &home)
         .args(["--json", "replay", "latest", "--hook", "stripe"])
         .output()
@@ -150,7 +150,7 @@ fn replay_event_to_target_fetches_event_then_resolves_target() {
         &format!("api_base_url = \"{base_url}\"\ntoken = \"tofu_pat_saved\"\n"),
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu-cli"))
+    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
         .env("HOME", &home)
         .args(["--json", "replay", "event_1", "--target", "dev"])
         .output()

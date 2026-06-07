@@ -67,7 +67,7 @@ fn targets_list_uses_active_workspace_and_hook_slug() {
         &format!("api_base_url = \"{base_url}\"\ntoken = \"tofu_pat_saved\"\n"),
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu-cli"))
+    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
         .env("HOME", &home)
         .args(["--json", "targets", "list", "--hook", "stripe"])
         .output()
@@ -123,7 +123,7 @@ fn targets_disable_resolves_target_id_before_toggling() {
         &format!("api_base_url = \"{base_url}\"\ntoken = \"tofu_pat_saved\"\n"),
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu-cli"))
+    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
         .env("HOME", &home)
         .args(["--json", "targets", "disable", "dev", "--hook", "stripe"])
         .output()
@@ -176,7 +176,7 @@ fn targets_disable_reports_missing_target_without_toggling() {
         &format!("api_base_url = \"{base_url}\"\ntoken = \"tofu_pat_saved\"\n"),
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu-cli"))
+    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
         .env("HOME", &home)
         .args(["targets", "disable", "dev", "--hook", "stripe"])
         .output()

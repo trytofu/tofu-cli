@@ -11,7 +11,7 @@ fn token_login_verifies_then_saves_config() {
     let base_url = server.base_url.clone();
     let home = temp_home("token");
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu-cli"))
+    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
         .env("HOME", &home)
         .args([
             "login",
@@ -53,7 +53,7 @@ fn token_login_does_not_save_config_when_verification_fails() {
     let base_url = server.base_url.clone();
     let home = temp_home("invalid-token");
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu-cli"))
+    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
         .env("HOME", &home)
         .args([
             "login",
@@ -99,7 +99,7 @@ fn device_login_polls_for_token_then_verifies_and_saves_config() {
     let base_url = server.base_url.clone();
     let home = temp_home("device");
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu-cli"))
+    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
         .env("HOME", &home)
         .args(["login", "--api-base-url", &base_url, "--no-browser"])
         .output()
@@ -146,7 +146,7 @@ fn whoami_uses_saved_token_and_prints_json_user() {
         &format!("api_base_url = \"{base_url}\"\ntoken = \"tofu_pat_saved\"\n"),
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu-cli"))
+    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
         .env("HOME", &home)
         .args(["--json", "whoami"])
         .output()
@@ -187,7 +187,7 @@ fn whoami_reports_fetch_failure_without_login_wording() {
         &format!("api_base_url = \"{base_url}\"\ntoken = \"tofu_pat_saved\"\n"),
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu-cli"))
+    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
         .env("HOME", &home)
         .args(["whoami"])
         .output()
@@ -217,7 +217,7 @@ fn logout_clears_token_but_preserves_api_base_url() {
         "api_base_url = \"http://127.0.0.1:1234\"\ntoken = \"tofu_pat_saved\"\n",
     );
 
-    let output = Command::new(env!("CARGO_BIN_EXE_tofu-cli"))
+    let output = Command::new(env!("CARGO_BIN_EXE_tofu"))
         .env("HOME", &home)
         .args(["--json", "logout"])
         .output()
