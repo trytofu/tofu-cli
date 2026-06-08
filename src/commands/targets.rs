@@ -65,20 +65,21 @@ impl TargetStatus {
     }
 }
 
+#[derive(Clone, Copy)]
 enum SetResult {
     Created,
     Updated,
 }
 
 impl SetResult {
-    fn status(&self) -> &'static str {
+    fn status(self) -> &'static str {
         match self {
             Self::Created => "created",
             Self::Updated => "updated",
         }
     }
 
-    fn past_tense(&self) -> &'static str {
+    fn past_tense(self) -> &'static str {
         match self {
             Self::Created => "Created",
             Self::Updated => "Updated",

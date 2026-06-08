@@ -68,7 +68,7 @@ impl Theme {
 
     pub fn tone_cell(self, value: impl Into<String>, tone: Tone) -> Cell {
         let cell = Cell::new(value.into());
-        if stdout_color_enabled() {
+        if self.colors {
             cell.fg(table_color(tone))
         } else {
             cell

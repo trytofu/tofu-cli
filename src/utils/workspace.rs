@@ -71,8 +71,10 @@ pub async fn resolve_target_id_or_exit(
         Ok(targets) => targets
             .into_iter()
             .find(|target| target.name == target_name)
-            .map(|target| target.id)
-            .unwrap_or_else(|| exit_target_not_found(target_name, hook_slug)),
+            .map_or_else(
+                || exit_target_not_found(target_name, hook_slug),
+                |target| target.id,
+            ),
         Err(e) => exit_api_error(
             e,
             "resolve target",
