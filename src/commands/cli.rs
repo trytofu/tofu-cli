@@ -70,6 +70,14 @@ pub enum Commands {
         #[arg(long, help = "Target name to replay to")]
         target: Option<String>,
     },
+    /// Watch events for a hook
+    Watch {
+        slug: String,
+        #[arg(long, help = "Show delivery updates")]
+        deliveries: bool,
+        #[arg(long, help = "Filter delivery updates to a target name")]
+        target: Option<String>,
+    },
 }
 
 #[derive(Subcommand)]

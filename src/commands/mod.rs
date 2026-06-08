@@ -7,6 +7,7 @@ pub mod hooks;
 pub mod replay;
 pub mod targets;
 pub mod usage;
+pub mod watch;
 pub mod workspaces;
 
 pub use cli::{

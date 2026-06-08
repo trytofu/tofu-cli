@@ -4,6 +4,7 @@ pub mod events;
 pub mod health_status;
 pub mod hook;
 pub mod member;
+pub mod sse_message;
 pub mod target;
 pub mod user_me;
 pub mod workspace;

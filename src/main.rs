@@ -7,7 +7,7 @@ use crate::{
         Cli, Commands, ConfigCommands, EventsCommands, HooksCommands, MembersCommands,
         TargetsCommand, WorkspaceCommands, auth, cli_config, events, health, hooks, replay,
         targets::{self, TargetStatus},
-        usage, workspaces,
+        usage, watch, workspaces,
     },
     config::Config,
 };
@@ -101,5 +101,10 @@ async fn main() {
             hook,
             target,
         } => replay::run(&client, event, hook, target, cli.json).await,
+        Commands::Watch {
+            slug,
+            deliveries,
+            target,
+        } => watch::run(&client, slug, deliveries, target, cli.json).await,
     }
 }

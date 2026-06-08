@@ -38,28 +38,6 @@ pub async fn resolve_hook_or_exit(client: &ApiClient, slug: &str) -> Hook {
     }
 }
 
-#[allow(dead_code)]
-pub async fn resolve_target_id(
-    client: &ApiClient,
-    hook_slug: &str,
-    target_name: &str,
-) -> Result<Option<String>, ApiError> {
-    let Some(workspace_id) = resolve_workspace_id(client).await? else {
-        return Ok(None);
-    };
-
-    let Some(hook) = resolve_hook_in_workspace(client, &workspace_id, hook_slug).await? else {
-        return Ok(None);
-    };
-
-    let targets = client.list_targets(&hook.id).await?;
-
-    Ok(targets
-        .into_iter()
-        .find(|t| t.name == target_name)
-        .map(|t| t.id))
-}
-
 pub async fn resolve_target_id_or_exit(
     client: &ApiClient,
     hook_slug: &str,

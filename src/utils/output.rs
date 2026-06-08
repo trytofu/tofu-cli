@@ -113,7 +113,6 @@ pub fn info(message: impl AsRef<str>) {
     println!("{}", paint(message, Tone::Info));
 }
 
-#[allow(dead_code)]
 pub fn empty(message: impl AsRef<str>) {
     println!("{}", paint(message, Tone::Muted));
 }
@@ -155,12 +154,10 @@ pub fn cell(value: impl Into<String>) -> Cell {
     Cell::new(value.into())
 }
 
-#[allow(dead_code)]
 pub fn tone_cell(value: impl Into<String>, tone: Tone) -> Cell {
     theme().tone_cell(value, tone)
 }
 
-#[allow(dead_code)]
 pub fn url_cell(value: impl AsRef<str>) -> Cell {
     tone_cell(value.as_ref(), Tone::Info)
 }

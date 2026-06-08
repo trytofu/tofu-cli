@@ -19,6 +19,7 @@ dirs = "6"
 comfy-table = "7"
 colored = "3.0.0"
 thiserror = "2.0.18"
+chrono = "0.4"
 
 [[bin]]
 name = "tofu"
