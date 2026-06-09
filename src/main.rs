@@ -26,6 +26,18 @@ async fn main() {
     let client = ApiClient::new(api_base_url, config.resolve_token());
 
     match cli.command {
+        Commands::Version => {
+            if cli.json {
+                println!(
+                    "{}",
+                    serde_json::json!({
+                        "version": env!("CARGO_PKG_VERSION"),
+                    })
+                );
+            } else {
+                println!("{}", env!("CARGO_PKG_VERSION"));
+            }
+        }
         Commands::Health => health::run(&client, cli.json).await,
         Commands::Login {
             token,

@@ -19,6 +19,8 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
+    /// Print the CLI version
+    Version,
     /// Checks API health
     Health,
     /// Log in with your browser approval or an API token
