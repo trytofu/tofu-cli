@@ -109,6 +109,11 @@ Tofu is not an ngrok replacement. Use ngrok, staging, a preview URL, or another 
 
 Full quickstart and provider examples: [trytofu.dev/docs](https://trytofu.dev/docs)
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines, including
+the policy for AI-assisted submissions.
+
 ## License
 
 MIT
