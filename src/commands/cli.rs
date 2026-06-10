@@ -19,6 +19,8 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
+    /// Print the CLI version
+    Version,
     /// Checks API health
     Health,
     /// Log in with your browser approval or an API token
@@ -68,6 +70,14 @@ pub enum Commands {
         #[arg(long, help = "Hook slug (required when event is 'latest')")]
         hook: Option<String>,
         #[arg(long, help = "Target name to replay to")]
+        target: Option<String>,
+    },
+    /// Watch events for a hook
+    Watch {
+        slug: String,
+        #[arg(long, help = "Show delivery updates")]
+        deliveries: bool,
+        #[arg(long, help = "Filter delivery updates to a target name")]
         target: Option<String>,
     },
 }

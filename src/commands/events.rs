@@ -1,6 +1,8 @@
+use std::fmt::Write as _;
+
 use crate::{
     api::ApiClient,
-    models::events::EventDetail,
+    models::events::{DeliveryDetail, EventDetail},
     utils::{
         api_errors::exit_api_error,
         output::{self, Tone},
@@ -30,7 +32,8 @@ pub async fn list(client: &ApiClient, hook_slug: String, limit: u32, json: bool)
                         summary.total, summary.success, summary.failed
                     );
                     if summary.pending > 0 {
-                        status.push_str(&format!(", {} pending", summary.pending));
+                        write!(status, ", {} pending", summary.pending)
+                            .expect("writing to String cannot fail");
                     }
                     status.push(')');
                     let replay_status = if e.replay_available {
@@ -153,110 +156,150 @@ pub async fn expire(client: &ApiClient, event_id: String, json: bool) {
 
 fn print_event(event: EventDetail, json: bool) {
     if json {
-        println!(
-            "{}",
-            serde_json::json!({
-                "id": event.id,
-                "hook_id": event.hook_id,
-                "method": event.method,
-                "path": event.path,
-                "query_string": event.query_string,
-                "headers": event.headers,
-                "body_preview": event.body_preview,
-                "received_at": event.received_at,
-                "payload_expires_at": event.payload_expires_at,
-                "metadata_expires_at": event.metadata_expires_at,
-                "payload_expired_at": event.payload_expired_at,
-                "manually_expired_at": event.manually_expired_at,
-                "payload_expired": event.payload_expired,
-                "replay_available": event.replay_available,
-                "deliveries": event.deliveries,
-            })
-        );
+        print_event_json(&event);
     } else {
-        let mut rows = vec![
-            ("Event", event.id),
-            ("Method", event.method),
-            ("Path", event.path),
-            ("Received", fmt_time(&event.received_at)),
-        ];
-        if let Some(qs) = event.query_string {
-            rows.push(("Query", qs));
-        }
-        if event.payload_expired {
-            rows.push(("Payload", output::paint("expired", Tone::Warning)));
-            rows.push(("Replay", output::paint("unavailable", Tone::Warning)));
-        } else {
-            rows.push(("Payload expires", fmt_time(&event.payload_expires_at)));
-            rows.push(("Replay", output::paint("available", Tone::Success)));
-        }
-        print_detail_rows(&rows);
+        print_event_text(event);
+    }
+}
 
-        if let Some(preview) = event.body_preview {
-            println!("\n{}", output::paint("Body preview", Tone::Muted));
-            println!("{}", fmt_body_preview(&preview));
-        }
+fn print_event_json(event: &EventDetail) {
+    println!(
+        "{}",
+        serde_json::json!({
+            "id": &event.id,
+            "hook_id": &event.hook_id,
+            "method": &event.method,
+            "path": &event.path,
+            "query_string": &event.query_string,
+            "headers": &event.headers,
+            "body_preview": &event.body_preview,
+            "received_at": &event.received_at,
+            "payload_expires_at": &event.payload_expires_at,
+            "metadata_expires_at": &event.metadata_expires_at,
+            "payload_expired_at": &event.payload_expired_at,
+            "manually_expired_at": &event.manually_expired_at,
+            "payload_expired": event.payload_expired,
+            "replay_available": event.replay_available,
+            "deliveries": &event.deliveries,
+        })
+    );
+}
 
-        if let Some(headers) = event.headers.as_object() {
-            if !headers.is_empty() {
-                let mut t = output::data_table(&["Header", "Value"]);
-                for (key, value) in headers {
-                    t.add_row(vec![
-                        output::cell(key.to_string()),
-                        output::cell(value.to_string()),
-                    ]);
-                }
-                println!("\nHeaders:\n{t}");
-            }
-        }
+fn print_event_text(event: EventDetail) {
+    let EventDetail {
+        id,
+        method,
+        path,
+        query_string,
+        headers,
+        body_preview,
+        received_at,
+        payload_expires_at,
+        payload_expired,
+        deliveries,
+        ..
+    } = event;
 
-        if event.deliveries.is_empty() {
-            output::empty("\nNo deliveries found for this event.");
-        } else {
-            let mut t = output::data_table(&["Attempted", "Target", "URL", "Result", "Duration"]);
-            for d in event.deliveries {
-                match d.status.as_str() {
-                    "success" => {
-                        let status = d.response_status.unwrap_or(0);
-                        let ms = d.duration_ms.unwrap_or(0);
-                        t.add_row(vec![
-                            output::cell(fmt_time(&d.attempted_at)),
-                            output::cell(d.target_name),
-                            output::url_cell(&d.target_url),
-                            output::tone_cell(format!("HTTP {}", status), Tone::Success),
-                            output::cell(format!("{}ms", ms)),
-                        ]);
-                    }
-                    "failed" => {
-                        let ms = d.duration_ms.unwrap_or(0);
-                        let reason = d.error_message.unwrap_or_default();
-                        let result = if reason.is_empty() {
-                            "failed".to_string()
-                        } else {
-                            format!("failed: {}", reason)
-                        };
-                        t.add_row(vec![
-                            output::cell(fmt_time(&d.attempted_at)),
-                            output::cell(d.target_name),
-                            output::url_cell(&d.target_url),
-                            output::tone_cell(result, Tone::Error),
-                            output::cell(format!("{}ms", ms)),
-                        ]);
-                    }
-                    _ => {
-                        t.add_row(vec![
-                            output::cell(fmt_time(&d.attempted_at)),
-                            output::cell(d.target_name),
-                            output::url_cell(&d.target_url),
-                            output::status_cell(d.status),
-                            output::cell(""),
-                        ]);
-                    }
-                }
-            }
-            println!("\nDeliveries:\n{t}");
+    let mut rows = vec![
+        ("Event", id),
+        ("Method", method),
+        ("Path", path),
+        ("Received", fmt_time(&received_at)),
+    ];
+    if let Some(qs) = query_string {
+        rows.push(("Query", qs));
+    }
+    if payload_expired {
+        rows.push(("Payload", output::paint("expired", Tone::Warning)));
+        rows.push(("Replay", output::paint("unavailable", Tone::Warning)));
+    } else {
+        rows.push(("Payload expires", fmt_time(&payload_expires_at)));
+        rows.push(("Replay", output::paint("available", Tone::Success)));
+    }
+    print_detail_rows(&rows);
+    print_body_preview(body_preview);
+    print_headers(&headers);
+    print_deliveries(deliveries);
+}
+
+fn print_body_preview(body_preview: Option<String>) {
+    if let Some(preview) = body_preview {
+        println!("\n{}", output::paint("Body preview", Tone::Muted));
+        println!("{}", fmt_body_preview(&preview));
+    }
+}
+
+fn print_headers(headers: &serde_json::Value) {
+    if let Some(headers) = headers.as_object()
+        && !headers.is_empty()
+    {
+        let mut table = output::data_table(&["Header", "Value"]);
+        for (key, value) in headers {
+            table.add_row(vec![
+                output::cell(key.to_string()),
+                output::cell(value.to_string()),
+            ]);
+        }
+        println!("\nHeaders:\n{table}");
+    }
+}
+
+fn print_deliveries(deliveries: Vec<DeliveryDetail>) {
+    if deliveries.is_empty() {
+        output::empty("\nNo deliveries found for this event.");
+        return;
+    }
+
+    let mut table = output::data_table(&["Attempted", "Target", "URL", "Result", "Duration"]);
+    for delivery in deliveries {
+        add_delivery_row(&mut table, delivery);
+    }
+    println!("\nDeliveries:\n{table}");
+}
+
+fn add_delivery_row(table: &mut comfy_table::Table, delivery: DeliveryDetail) {
+    match delivery.status.as_str() {
+        "success" => add_success_delivery_row(table, delivery),
+        "failed" => add_failed_delivery_row(table, delivery),
+        _ => {
+            table.add_row(vec![
+                output::cell(fmt_time(&delivery.attempted_at)),
+                output::cell(delivery.target_name),
+                output::url_cell(&delivery.target_url),
+                output::status_cell(delivery.status),
+                output::cell(""),
+            ]);
         }
     }
+}
+
+fn add_success_delivery_row(table: &mut comfy_table::Table, delivery: DeliveryDetail) {
+    let status = delivery.response_status.unwrap_or(0);
+    let ms = delivery.duration_ms.unwrap_or(0);
+    table.add_row(vec![
+        output::cell(fmt_time(&delivery.attempted_at)),
+        output::cell(delivery.target_name),
+        output::url_cell(&delivery.target_url),
+        output::tone_cell(format!("HTTP {status}"), Tone::Success),
+        output::cell(format!("{ms}ms")),
+    ]);
+}
+
+fn add_failed_delivery_row(table: &mut comfy_table::Table, delivery: DeliveryDetail) {
+    let ms = delivery.duration_ms.unwrap_or(0);
+    let reason = delivery.error_message.unwrap_or_default();
+    let result = if reason.is_empty() {
+        "failed".to_string()
+    } else {
+        format!("failed: {reason}")
+    };
+    table.add_row(vec![
+        output::cell(fmt_time(&delivery.attempted_at)),
+        output::cell(delivery.target_name),
+        output::url_cell(&delivery.target_url),
+        output::tone_cell(result, Tone::Error),
+        output::cell(format!("{ms}ms")),
+    ]);
 }
 
 fn print_detail_rows(rows: &[(&str, String)]) {

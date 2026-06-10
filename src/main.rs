@@ -7,7 +7,7 @@ use crate::{
         Cli, Commands, ConfigCommands, EventsCommands, HooksCommands, MembersCommands,
         TargetsCommand, WorkspaceCommands, auth, cli_config, events, health, hooks, replay,
         targets::{self, TargetStatus},
-        usage, workspaces,
+        usage, watch, workspaces,
     },
     config::Config,
 };
@@ -26,6 +26,18 @@ async fn main() {
     let client = ApiClient::new(api_base_url, config.resolve_token());
 
     match cli.command {
+        Commands::Version => {
+            if cli.json {
+                println!(
+                    "{}",
+                    serde_json::json!({
+                        "version": env!("CARGO_PKG_VERSION"),
+                    })
+                );
+            } else {
+                println!("{}", env!("CARGO_PKG_VERSION"));
+            }
+        }
         Commands::Health => health::run(&client, cli.json).await,
         Commands::Login {
             token,
@@ -70,30 +82,30 @@ async fn main() {
         },
         Commands::Targets { command } => match command {
             TargetsCommand::Add { name, url, hook } => {
-                targets::add(&client, name, url, hook, cli.json).await
+                targets::add(&client, name, url, hook, cli.json).await;
             }
             TargetsCommand::Set { name, url, hook } => {
-                targets::set(&client, name, url, hook, cli.json).await
+                targets::set(&client, name, url, hook, cli.json).await;
             }
             TargetsCommand::List { hook } => targets::list(&client, hook, cli.json).await,
             TargetsCommand::Enable { name, hook } => {
-                targets::toggle(TargetStatus::On, &client, name, hook, cli.json).await
+                targets::toggle(TargetStatus::On, &client, name, hook, cli.json).await;
             }
             TargetsCommand::Disable { name, hook } => {
-                targets::toggle(TargetStatus::Off, &client, name, hook, cli.json).await
+                targets::toggle(TargetStatus::Off, &client, name, hook, cli.json).await;
             }
             TargetsCommand::Delete { name, hook } => {
-                targets::delete(&client, name, hook, cli.json).await
+                targets::delete(&client, name, hook, cli.json).await;
             }
         },
         Commands::Events { command } => match command {
             EventsCommands::List { hook, limit } => {
-                events::list(&client, hook, limit, cli.json).await
+                events::list(&client, hook, limit, cli.json).await;
             }
             EventsCommands::Show { event_id } => events::show(&client, event_id, cli.json).await,
             EventsCommands::Latest { hook } => events::latest(&client, hook, cli.json).await,
             EventsCommands::Expire { event_id } => {
-                events::expire(&client, event_id, cli.json).await
+                events::expire(&client, event_id, cli.json).await;
             }
         },
         Commands::Replay {
@@ -101,5 +113,10 @@ async fn main() {
             hook,
             target,
         } => replay::run(&client, event, hook, target, cli.json).await,
+        Commands::Watch {
+            slug,
+            deliveries,
+            target,
+        } => watch::run(&client, slug, deliveries, target, cli.json).await,
     }
 }

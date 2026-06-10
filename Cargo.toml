@@ -1,6 +1,6 @@
 [package]
 name = "tofu-cli"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "A terminal-first webhook relay CLI for local development."
 homepage = "https://trytofu.dev"
@@ -19,6 +19,7 @@ dirs = "6"
 comfy-table = "7"
 colored = "3.0.0"
 thiserror = "2.0.18"
+chrono = "0.4"
 
 [[bin]]
 name = "tofu"

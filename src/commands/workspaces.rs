@@ -32,8 +32,7 @@ pub async fn list(client: &ApiClient, json: bool) {
                         output::cell(ws.name),
                         output::cell(
                             ws.hook_count
-                                .map(|count| count.to_string())
-                                .unwrap_or_else(|| "-".to_string()),
+                                .map_or_else(|| "-".to_string(), |count| count.to_string()),
                         ),
                     ]);
                 }

@@ -6,31 +6,31 @@ use crate::{
 
 pub async fn run(client: &ApiClient, json: bool) {
     match client.billing_status().await {
-        Ok(s) => print_usage(s, json),
+        Ok(s) => print_usage(&s, json),
         Err(e) => exit_api_error(e, "fetch usage", None),
     }
 }
 
-fn print_usage(status: BillingStatus, json: bool) {
+fn print_usage(status: &BillingStatus, json: bool) {
     if json {
         println!(
             "{}",
             serde_json::json!({
-                "plan": status.plan,
-                "status": status.status,
-                "current_period_start": status.current_period_start,
-                "current_period_end": status.current_period_end,
+                "plan": &status.plan,
+                "status": &status.status,
+                "current_period_start": &status.current_period_start,
+                "current_period_end": &status.current_period_end,
                 "cancel_at_period_end": status.cancel_at_period_end,
-                "usage": status.usage,
-                "limits": status.limits,
+                "usage": &status.usage,
+                "limits": &status.limits,
                 "remaining": usage_remaining(&status.usage, &status.limits),
             })
         );
         return;
     }
 
-    print_plan_summary(&status);
-    print_usage_table(&status);
+    print_plan_summary(status);
+    print_usage_table(status);
 }
 
 fn print_plan_summary(status: &BillingStatus) {

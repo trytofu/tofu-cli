@@ -8,18 +8,16 @@ pub struct Config {
 
 impl Config {
     pub fn load() -> Self {
-        let path = match Self::path() {
-            Some(p) => p,
-            None => return Self::default(),
+        let Some(path) = Self::path() else {
+            return Self::default();
         };
 
         if !path.exists() {
             return Self::default();
         }
 
-        let contents = match std::fs::read_to_string(&path) {
-            Ok(c) => c,
-            Err(_) => return Self::default(),
+        let Ok(contents) = std::fs::read_to_string(&path) else {
+            return Self::default();
         };
 
         toml::from_str(&contents).unwrap_or_default()

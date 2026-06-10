@@ -260,6 +260,13 @@ impl ApiClient {
 
 /// Workspace
 impl ApiClient {
+    pub async fn get_workspace(&self, workspace_id: &str) -> Result<Workspace, ApiError> {
+        let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
+        let url = format!("{}/api/workspaces/{workspace_id}", self.base_url);
+        let r = self.get_authenticated_response(&url, token).await?;
+        r.json().await.map_err(ApiError::Request)
+    }
+
     pub async fn list_workspaces(&self) -> Result<Vec<Workspace>, ApiError> {
         let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
         let url = format!("{}/api/workspaces", self.base_url);
@@ -348,15 +355,6 @@ impl ApiClient {
         let response = self
             .post_authenticated_response(&url, token, Some(&body))
             .await?;
-        response.json::<Hook>().await.map_err(ApiError::Request)
-    }
-
-    #[allow(dead_code)]
-    pub async fn get_hook(&self, hook_id: &str) -> Result<Hook, ApiError> {
-        let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
-        let url = format!("{}/api/hooks/{hook_id}", self.base_url);
-
-        let response = self.get_authenticated_response(&url, token).await?;
         response.json::<Hook>().await.map_err(ApiError::Request)
     }
 }
@@ -491,5 +489,15 @@ impl ApiClient {
         let url = format!("{}/api/events/{event_id}/replay", self.base_url);
         self.post_authenticated_response(&url, token, None).await?;
         Ok(())
+    }
+}
+
+impl ApiClient {
+    pub async fn stream_events(&self, hook_id: &str) -> Result<reqwest::Response, ApiError> {
+        let token = self.token.as_ref().ok_or(ApiError::NotAuthenticated)?;
+        let url = format!("{}/api/hooks/{hook_id}/events/stream", self.base_url);
+
+        let r = self.get_authenticated_response(&url, token).await?;
+        Ok(r)
     }
 }
